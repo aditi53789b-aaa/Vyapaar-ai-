@@ -1,5 +1,5 @@
 # Vyapaar-ai-
-# 🚀 Vyaapaar AI – Your AI-Powered Digital Business Assistant
+#  Vyaapaar AI – Your AI-Powered Digital Business Assistant
 
 **Empowering Small Businesses, Street Vendors, and Micro-Entrepreneurs Through AI**
 
@@ -84,7 +84,7 @@ An intelligent financial assistance feature that helps merchants organize their 
 
 ---
 
-## 🛠️ Technology Stack
+##  Technology Stack
 
 | Layer | Technologies |
 |---|---|
@@ -107,7 +107,7 @@ An intelligent financial assistance feature that helps merchants organize their 
 | Config | pydantic-settings (.env) |
 | Testing | pytest, Swagger UI / Postman |
 
-## 🏗️ System Architecture
+##  System Architecture
 
 Vyaapaar AI follows a modular architecture that connects voice input, AI processing, business logic, and transaction storage.
 
@@ -235,7 +235,7 @@ http://localhost:3000
 
 ---
 
-## 🎯 Target Users
+##  Target Users
 
 - Street vendors
 - Small shop owners
@@ -247,7 +247,7 @@ http://localhost:3000
 
 ---
 
-## 🌍 Social Impact
+##  Social Impact
 
 Vyaapaar AI aims to contribute towards:
 
@@ -259,7 +259,7 @@ Vyaapaar AI aims to contribute towards:
 
 ---
 
-## 🔮 Future Enhancements
+##  Future Enhancements
 
 - WhatsApp-based transaction recording.
 - Advanced sales analytics and business dashboards.
@@ -272,7 +272,7 @@ Vyaapaar AI aims to contribute towards:
 
 ---
 
-## 👥 Team
+##  Team
 
 **Project:** Vyaapaar AI
 
@@ -396,7 +396,7 @@ Server starts at **http://127.0.0.1:8000** — interactive docs at **http://127.
 cd backend
 pytest tests/ -v
 ```
-## 📜 License
+##  License
 
 This project is intended for educational, innovation, and social-impact purposes.
 

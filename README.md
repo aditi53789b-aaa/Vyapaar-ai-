@@ -220,7 +220,7 @@ http://localhost:3000
 
 ---
 
-## 🔄 Example User Workflow
+## Example User Workflow
 
 **Scenario:** A street vendor wants to record a credit transaction.
 

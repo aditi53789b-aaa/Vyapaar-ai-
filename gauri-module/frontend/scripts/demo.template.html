@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vyapaar Sathi: Voice, Insights, Credit Copilot</title>
+<style>
+  :root {
+    --bg: #f6f7f4; --card: #ffffff; --ink: #1c2420; --muted: #5d6a63; --line: #dfe4de;
+    --brand: #0f7b53; --brand-ink: #ffffff; --warn: #b3261e; --warn-bg: #fdecea; --good: #146c43; --good-bg: #e7f5ee; --info-bg: #f1f4f2;
+    --amber: #8a5a00; --code-bg: #f1f4f2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121815; --card: #1a221e; --ink: #e8efe9; --muted: #9fb0a5; --line: #2a352f;
+      --brand: #3ecf8e; --brand-ink: #0b1a13; --warn: #ff8a80; --warn-bg: #3a1d1b; --good: #7be0b0; --good-bg: #17302a; --info-bg: #202a25;
+      --amber: #f0c36a; --code-bg: #202a25;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 860px) { .grid { grid-template-columns: 1fr 1fr; } .full { grid-column: 1 / -1; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card h2 { font-size: 1.05rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+  .num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: var(--brand-ink); font-size: .8rem; }
+  label { font-size: .85rem; color: var(--muted); }
+  select, input[type=text], button { font: inherit; }
+  select, input[type=text] { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 8px; padding: 8px 10px; }
+  input[type=text] { width: 100%; }
+  button { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+  button.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); font-weight: 600; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .mic { width: 72px; height: 72px; border-radius: 50%; border: 0; background: var(--brand); color: var(--brand-ink); font-weight: 700; transition: box-shadow .08s; }
+  .mic.rec { background: #d93025; color: #fff; }
+  .meter { height: 8px; background: var(--info-bg); border-radius: 4px; overflow: hidden; flex: 1; min-width: 120px; }
+  .meter > i { display: block; height: 100%; width: 0; background: var(--brand); transition: width .08s; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+  .chip { font-size: .8rem; padding: 4px 10px; border-radius: 999px; }
+  .muted { color: var(--muted); font-size: .85rem; }
+  .q { color: var(--amber); font-weight: 600; margin: 8px 0; }
+  pre { background: var(--code-bg); padding: 10px; border-radius: 8px; overflow: auto; font-size: .78rem; margin: 8px 0 0; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); }
+  td.r, th.r { text-align: right; }
+  .tbl { max-height: 240px; overflow: auto; }
+  .ins { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .ins li { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: .9rem; }
+  .ins li.warn { background: var(--warn-bg); border-color: var(--warn); }
+  .ins li.good { background: var(--good-bg); border-color: var(--good); }
+  .ins li.info { background: var(--info-bg); }
+  .ins b { display: block; }
+  .act { font-size: .8rem; font-weight: 600; margin-top: 2px; }
+  .score { font-size: 2.4rem; font-weight: 700; line-height: 1; }
+  .bar { height: 10px; background: var(--info-bg); border-radius: 5px; overflow: hidden; margin: 8px 0 12px; }
+  .bar > i { display: block; height: 100%; background: var(--brand); }
+  ul.plain { margin: 4px 0 10px; padding-left: 18px; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .75rem; background: var(--info-bg); }
+  .note { font-size: .8rem; color: var(--muted); border-top: 1px dashed var(--line); margin-top: 12px; padding-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Vyapaar Sathi: voice, insights &amp; credit readiness</h1>
+  <p class="sub">Runs entirely in your browser: no server, no API keys. It uses the same parser, context, insight and scoring code as the app.</p>
+
+  <div class="grid">
+    <section class="card" aria-labelledby="h-voice">
+      <h2 id="h-voice"><span class="num">1</span> Bolo: voice entry</h2>
+      <div class="row">
+        <label for="lang">Language</label>
+        <select id="lang">
+          <option value="hi-IN">Hinglish / हिन्दी</option>
+          <option value="en-IN">English (India)</option>
+          <option value="pa-IN">ਪੰਜਾਬੀ</option>
+          <option value="mr-IN">मराठी</option>
+          <option value="ta-IN">தமிழ்</option>
+        </select>
+      </div>
+      <div class="row" style="margin:12px 0">
+        <button id="mic" class="mic" aria-pressed="false">Bolo</button>
+        <div style="flex:1;min-width:140px">
+          <div class="meter" aria-hidden="true"><i id="level"></i></div>
+          <div class="muted" id="capinfo">Mic idle</div>
+        </div>
+      </div>
+      <audio id="playback" controls hidden style="width:100%;margin-bottom:8px"></audio>
+      <div class="muted" id="live" aria-live="polite"></div>
+      <label for="text" style="display:block;margin-top:8px">Or type / edit the entry</label>
+      <form id="form" class="row" style="flex-wrap:nowrap">
+        <input id="text" type="text" autocomplete="off" placeholder="Ramesh ko 500 udhaar diya">
+        <button class="primary" type="submit">Samjho</button>
+      </form>
+      <div class="chips" id="chips" aria-label="Try an example"></div>
+      <div id="result"></div>
+      <p class="note">Mic capture uses MediaRecorder (the same code path as the app). Live speech-to-text here uses your browser's built-in recognizer when available (Chrome/Edge); the real app streams the audio to Bhashini / Whisper instead.</p>
+    </section>
+
+    <section class="card" aria-labelledby="h-ledger">
+      <h2 id="h-ledger"><span class="num">2</span> Ledger</h2>
+      <div class="row" style="margin-bottom:8px">
+        <button id="sample">Load 90 days of sample data</button>
+        <button id="clear">Clear</button>
+        <span class="muted" id="count"></span>
+      </div>
+      <div class="tbl"><table><thead><tr><th>Date</th><th>Type</th><th>Party</th><th class="r">₹</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <p class="note">Entries you save in step 1 land here. Everything below recomputes from this ledger.</p>
+    </section>
+
+    <section class="card" aria-labelledby="h-ins">
+      <h2 id="h-ins"><span class="num">3</span> This week's insights</h2>
+      <div class="row" style="margin-bottom:8px">
+        <label for="ilang">Language</label>
+        <select id="ilang"><option value="hinglish">Hinglish</option><option value="en">English</option></select>
+      </div>
+      <ul class="ins" id="insights"></ul>
+    </section>
+
+    <section class="card" aria-labelledby="h-cr">
+      <h2 id="h-cr"><span class="num">4</span> Credit readiness</h2>
+      <div class="row" style="margin-bottom:8px">
+        <label><input type="checkbox" id="udyam"> Udyam registered</label>
+        <label><input type="checkbox" id="bank" checked> Business bank account</label>
+      </div>
+      <div id="readiness"></div>
+      <p class="note">The score is computed from your ledger by fixed rules. The app's AI copilot only explains it and matches government schemes (it needs the server + pgvector, so it is not part of this offline demo).</p>
+    </section>
+  </div>
+</div>
+
+<script>
+/*__BUNDLE__*/
+</script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const inrFmt = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
+
+  // ---------- state ----------
+  let ctx = emptyContext();
+  let ledger = [];
+  let current = null; // the parsed entry awaiting confirmation
+  try { ledger = JSON.parse(localStorage.getItem("vs_demo_ledger") || "[]"); } catch { ledger = []; }
+  const persist = () => { try { localStorage.setItem("vs_demo_ledger", JSON.stringify(ledger)); } catch {} };
+
+  // ---------- 1. parse ----------
+  function handleText(raw) {
+    const text = raw.trim();
+    if (!text) return;
+    const parsed = sanityCheck(ruleParse(text, { today: todayISO() }));
+    const { intent, notes } = resolveTurn(text, parsed, ctx);
+    const question = nextQuestion(intent, "hinglish");
+    ctx = pushTurn(ctx, text, intent);
+    current = intent;
+    renderResult(intent, question, notes, text);
+  }
+
+  function renderResult(i, question, notes, text) {
+    const canSave = !question && i.intent !== "query" && i.intent !== "unknown";
+    $("result").innerHTML =
+      `<div class="row" style="justify-content:space-between;margin-top:6px"><b>${esc(i.intent.replace("_", " "))}</b>` +
+      `<span class="tag">confidence ${Math.round(i.confidence * 100)}%</span></div>` +
+      `<div>Amount: <b>${i.amount != null ? inrFmt(i.amount) : "—"}</b> · Party: <b>${esc(i.party || "—")}</b> · Date: ${esc(i.date || "—")}</div>` +
+      (i.items.length ? `<div class="muted">Items: ${i.items.map((x) => esc(`${x.name} ${x.quantity ?? ""}${x.unit ?? ""}`)).join(", ")}</div>` : "") +
+      (notes.length ? `<div class="muted">Context: ${notes.map(esc).join("; ")}</div>` : "") +
+      (question ? `<div class="q">${esc(question)} <span class="muted">(type or say the answer)</span></div>` :
+        i.needs_confirmation ? `<div class="q">Please check the details before saving.</div>` : "") +
+      `<div class="row" style="margin-top:8px"><button class="primary" id="save" ${canSave ? "" : "disabled"}>Save to ledger</button></div>` +
+      `<pre>${esc(JSON.stringify(i, null, 2))}</pre>`;
+    const save = $("save");
+    if (save) save.onclick = () => {
+      ledger.push({ id: Date.now(), intent: current.intent, amount: current.amount, party: current.party, date: current.date || todayISO(), payment_mode: current.payment_mode });
+      persist(); current = null; $("result").innerHTML = ""; $("text").value = ""; renderAll();
+    };
+  }
+
+  $("form").addEventListener("submit", (e) => { e.preventDefault(); handleText($("text").value); $("text").select(); });
+
+  const EXAMPLES = [
+    "Ramesh ko 500 udhaar diya",
+    "aur 200 de diya",
+    "usko 100 wapas mile",
+    "Ramesh ko udhaar diya",
+    "paanch sau",
+    "kal Suresh se do hazaar paanch sau ka maal udhaar liya",
+    "aaj 5 kilo chawal 250 rupaye mein becha UPI se",
+    "bijli bill 1200 bhara",
+    "रमेश को ५०० रुपये उधार दिया",
+  ];
+  EXAMPLES.forEach((ex) => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.textContent = ex;
+    b.onclick = () => { $("text").value = ex; handleText(ex); };
+    $("chips").appendChild(b);
+  });
+
+  // ---------- mic capture (same approach as lib/voice/useVoiceRecorder.ts) ----------
+  const MIMES = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
+  let rec = null, stream = null, actx = null, raf = 0, recognizer = null, chunks = [], bytes = 0, lastVoice = 0, t0 = 0, maxTimer = 0;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  function setMic(on) {
+    $("mic").classList.toggle("rec", on); $("mic").setAttribute("aria-pressed", String(on)); $("mic").textContent = on ? "Stop" : "Bolo";
+  }
+
+  async function startMic() {
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      $("capinfo").textContent = "This browser cannot record audio. Type the entry instead."; return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    } catch (e) {
+      $("capinfo").textContent = e && e.name === "NotAllowedError" ? "Microphone permission denied. Allow mic access and try again." : "Could not access the microphone.";
+      return;
+    }
+    const mime = MIMES.find((m) => MediaRecorder.isTypeSupported(m));
+    rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+    chunks = []; bytes = 0; $("live").textContent = ""; $("playback").hidden = true;
+    rec.ondataavailable = (e) => { if (e.data.size) { chunks.push(e.data); bytes += e.data.size; $("capinfo").textContent = `Recording: ${chunks.length} chunks · ${(bytes / 1024).toFixed(1)} KB · ${rec.mimeType || "default"}`; } };
+    rec.onstop = () => {
+      const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+      cleanup();
+      if (blob.size) { $("playback").src = URL.createObjectURL(blob); $("playback").hidden = false; }
+      $("capinfo").textContent = `Captured ${chunks.length} chunks · ${(blob.size / 1024).toFixed(1)} KB · ${blob.type}`;
+    };
+
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    actx = new Ctx(); const an = actx.createAnalyser(); an.fftSize = 512;
+    actx.createMediaStreamSource(stream).connect(an);
+    const buf = new Uint8Array(an.fftSize); lastVoice = performance.now(); t0 = lastVoice;
+    const tick = () => {
+      an.getByteTimeDomainData(buf);
+      let s = 0; for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; s += v * v; }
+      const r = Math.sqrt(s / buf.length);
+      $("level").style.width = Math.min(100, r * 400) + "%";
+      if (r > 0.02) lastVoice = performance.now();
+      if (performance.now() - lastVoice > 3000 && performance.now() - t0 > 3000) { stopMic(); return; } // silence auto-stop
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    maxTimer = setTimeout(stopMic, 30000);
+
+    if (SR) {
+      recognizer = new SR(); recognizer.lang = $("lang").value; recognizer.interimResults = true; recognizer.continuous = false;
+      recognizer.onresult = (ev) => {
+        let interim = "", final = "";
+        for (const r of ev.results) (r.isFinal ? (final += r[0].transcript) : (interim += r[0].transcript));
+        $("live").textContent = (final || interim) + (final ? "" : "…");
+        if (final) { $("text").value = final; handleText(final); }
+      };
+      recognizer.onerror = (e) => { $("live").textContent = "Speech recognition: " + e.error + " (you can still type)"; };
+      try { recognizer.start(); } catch {}
+    } else {
+      $("live").textContent = "No built-in speech recognition in this browser. The audio is captured; type the entry to continue.";
+    }
+    rec.start(250); setMic(true);
+  }
+
+  function cleanup() {
+    cancelAnimationFrame(raf); clearTimeout(maxTimer);
+    stream && stream.getTracks().forEach((t) => t.stop());
+    actx && actx.close().catch(() => {});
+    stream = null; actx = null; $("level").style.width = "0"; setMic(false);
+  }
+  function stopMic() {
+    try { recognizer && recognizer.stop(); } catch {}
+    if (rec && rec.state !== "inactive") rec.stop();
+  }
+  $("mic").onclick = () => (rec && rec.state === "recording" ? stopMic() : startMic());
+
+  // ---------- 2. ledger ----------
+  function sampleData() {
+    let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const out = []; const today = todayISO();
+    const parties = ["Ramesh", "Suresh", "Mohan", "Geeta", "Anil"];
+    for (let d = 89; d >= 0; d--) {
+      const date = addDays(today, -d);
+      const n = 2 + Math.floor(rnd() * 3);
+      for (let k = 0; k < n; k++) {
+        const amount = Math.round((200 + rnd() * 1400) / 10) * 10;
+        out.push({ intent: "sale", amount, date, payment_mode: rnd() < 0.35 ? "upi" : "cash" });
+      }
+      if (d % 6 === 0) out.push({ intent: "expense", amount: 300 + Math.round(rnd() * 500), date });
+      if (d % 9 === 0) out.push({ intent: "purchase", amount: 3000 + Math.round(rnd() * 3000), date });
+      if (d % 11 === 0) out.push({ intent: "credit_given", amount: 400 + Math.round(rnd() * 900), party: parties[Math.floor(rnd() * parties.length)], date });
+    }
+    // two old, unpaid credits so the "overdue" insight is visible
+    out.push({ intent: "credit_given", amount: 1800, party: "Mohan", date: addDays(today, -62) });
+    out.push({ intent: "credit_given", amount: 950, party: "Geeta", date: addDays(today, -41) });
+    out.push({ intent: "payment_received", amount: 600, party: "Ramesh", date: addDays(today, -3) });
+    return out.map((t, i) => ({ id: i + 1, ...t }));
+  }
+  $("sample").onclick = () => { ledger = sampleData(); persist(); renderAll(); };
+  $("clear").onclick = () => { ledger = []; ctx = emptyContext(); persist(); renderAll(); };
+
+  // ---------- 3 + 4. render ----------
+  function renderAll() {
+    $("count").textContent = ledger.length + " entries";
+    const recent = [...ledger].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0, 40);
+    $("rows").innerHTML = recent.length
+      ? recent.map((t) => `<tr><td>${esc(t.date)}</td><td>${esc(t.intent.replace("_", " "))}</td><td>${esc(t.party || "")}</td><td class="r">${t.amount != null ? esc(t.amount.toLocaleString("en-IN")) : "—"}</td></tr>`).join("")
+      : `<tr><td colspan="4" class="muted">No entries yet. Save one from step 1 or load the sample data.</td></tr>`;
+
+    const stats = computeStats(ledger);
+    const ins = ruleInsights(stats, $("ilang").value);
+    $("insights").innerHTML = ins.length
+      ? ins.map((i) => `<li class="${i.severity}"><b>${esc(i.title)}</b>${esc(i.detail)}${i.action ? `<div class="act">→ ${esc(i.action)}</div>` : ""}</li>`).join("")
+      : `<li class="info">Add some entries to see insights.</li>`;
+
+    const profile = deriveProfile(ledger, { hasUdyam: $("udyam").checked, hasBankAccount: $("bank").checked });
+    const r = assessReadiness(profile);
+    const list = (a) => (a.length ? `<ul class="plain">${a.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : `<div class="muted">—</div>`);
+    $("readiness").innerHTML =
+      `<div class="row"><div class="score">${r.score}</div><div><span class="tag">${esc(r.band)}</span><div class="muted">out of 100</div></div></div>` +
+      `<div class="bar" role="img" aria-label="Score ${r.score} of 100"><i style="width:${r.score}%"></i></div>` +
+      `<b>Strengths</b>${list(r.strengths)}<b>To improve</b>${list(r.gaps)}<b>Next steps</b>${list(r.nextSteps)}` +
+      `<div class="muted">${profile.monthsOfRecords} month(s) of records · avg turnover ${inrFmt(profile.avgMonthlyTurnover)}/mo · ${Math.round(profile.digitalPaymentShare * 100)}% digital</div>`;
+  }
+  ["ilang", "udyam", "bank"].forEach((id) => $(id).addEventListener("change", renderAll));
+  renderAll();
+})();
+</script>
+</body>
+</html>

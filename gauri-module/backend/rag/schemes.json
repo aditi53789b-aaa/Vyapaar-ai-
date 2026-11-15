@@ -1,0 +1,65 @@
+{
+  "_warning": "DRAFT KNOWLEDGE BASE. Loan limits, interest subsidies and eligibility change often. Every entry must be checked against its official source_url before launch and 'verified' set to true.",
+  "schemes": [
+    {
+      "id": "mudra",
+      "name": "PM Mudra Yojana (PMMY)",
+      "source_url": "https://www.mudra.org.in",
+      "verified": false,
+      "sections": {
+        "eligibility": "Non-farm small/micro businesses (shops, trading, services, manufacturing) needing credit up to the Mudra ceiling. No collateral required. Available from banks, NBFCs and MFIs.",
+        "benefits": "Collateral-free loans in tiers: Shishu (up to Rs 50,000), Kishor (Rs 50,001 to Rs 5 lakh), Tarun (Rs 5 lakh to Rs 10 lakh). Check the official site for any newer higher tier.",
+        "documents": "Identity proof (Aadhaar), address proof, business proof or Udyam registration where available, recent bank statements, passport photos.",
+        "how_to_apply": "Apply at any bank branch, NBFC or MFI, or through the Udyamimitra portal. Bring ledger/bank records showing regular business income."
+      }
+    },
+    {
+      "id": "pm_svanidhi",
+      "name": "PM SVANidhi (Street Vendors)",
+      "source_url": "https://pmsvanidhi.mohua.gov.in",
+      "verified": false,
+      "sections": {
+        "eligibility": "Street vendors with a Certificate of Vending / ID card or a letter of recommendation from the urban local body, operating in urban areas.",
+        "benefits": "Collateral-free working capital loan in tranches with repayment-linked higher limits, interest subsidy for regular repayment and cashback for digital transactions. Verify the current tranche amounts on the official portal.",
+        "documents": "Vending certificate / ULB letter of recommendation, Aadhaar, bank account, mobile number linked to Aadhaar.",
+        "how_to_apply": "Apply via the PM SVANidhi portal or app, or through a Common Service Centre."
+      }
+    },
+    {
+      "id": "cgtmse",
+      "name": "CGTMSE Collateral-Free Credit Guarantee",
+      "source_url": "https://www.cgtmse.in",
+      "verified": false,
+      "sections": {
+        "eligibility": "New and existing micro and small enterprises (manufacturing or services; retail trade eligibility has varied, so verify) borrowing from member lending institutions.",
+        "benefits": "Government-backed guarantee so banks can lend without collateral or third-party guarantee up to the scheme ceiling.",
+        "documents": "Udyam registration, KYC, project/business details, financial statements or bank statements.",
+        "how_to_apply": "Apply to a member bank/NBFC; the lender enrols the loan under the guarantee."
+      }
+    },
+    {
+      "id": "pmegp",
+      "name": "PMEGP (Prime Minister's Employment Generation Programme)",
+      "source_url": "https://www.kviconline.gov.in/pmegpeportal",
+      "verified": false,
+      "sections": {
+        "eligibility": "Individuals above 18 starting a NEW micro-enterprise. Not for existing units. Minimum education may apply for higher project costs.",
+        "benefits": "Credit-linked margin-money subsidy on project cost; rate depends on category and urban/rural location.",
+        "documents": "Project report, identity and address proof, caste/special category certificate if applicable, EDP training certificate.",
+        "how_to_apply": "Apply online on the PMEGP e-portal; processed by KVIC / KVIB / DIC and a partner bank."
+      }
+    },
+    {
+      "id": "udyam",
+      "name": "Udyam Registration",
+      "source_url": "https://udyamregistration.gov.in",
+      "verified": false,
+      "sections": {
+        "eligibility": "Any micro, small or medium enterprise. Free, paperless, based on Aadhaar and PAN/GSTIN details as applicable.",
+        "benefits": "Unlocks priority-sector lending, CGTMSE cover, subsidies and many scheme applications. Treat this as the first step before most credit schemes.",
+        "documents": "Aadhaar of proprietor, PAN (and GSTIN if applicable), bank account details, business activity details.",
+        "how_to_apply": "Register for free on the official Udyam portal; no fee is charged."
+      }
+    }
+  ]
+}

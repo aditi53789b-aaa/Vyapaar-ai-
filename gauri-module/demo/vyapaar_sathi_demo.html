@@ -1,0 +1,1271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vyapaar Sathi: Voice, Insights, Credit Copilot</title>
+<style>
+  :root {
+    --bg: #f6f7f4; --card: #ffffff; --ink: #1c2420; --muted: #5d6a63; --line: #dfe4de;
+    --brand: #0f7b53; --brand-ink: #ffffff; --warn: #b3261e; --warn-bg: #fdecea; --good: #146c43; --good-bg: #e7f5ee; --info-bg: #f1f4f2;
+    --amber: #8a5a00; --code-bg: #f1f4f2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121815; --card: #1a221e; --ink: #e8efe9; --muted: #9fb0a5; --line: #2a352f;
+      --brand: #3ecf8e; --brand-ink: #0b1a13; --warn: #ff8a80; --warn-bg: #3a1d1b; --good: #7be0b0; --good-bg: #17302a; --info-bg: #202a25;
+      --amber: #f0c36a; --code-bg: #202a25;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 860px) { .grid { grid-template-columns: 1fr 1fr; } .full { grid-column: 1 / -1; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card h2 { font-size: 1.05rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+  .num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: var(--brand-ink); font-size: .8rem; }
+  label { font-size: .85rem; color: var(--muted); }
+  select, input[type=text], button { font: inherit; }
+  select, input[type=text] { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 8px; padding: 8px 10px; }
+  input[type=text] { width: 100%; }
+  button { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+  button.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); font-weight: 600; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .mic { width: 72px; height: 72px; border-radius: 50%; border: 0; background: var(--brand); color: var(--brand-ink); font-weight: 700; transition: box-shadow .08s; }
+  .mic.rec { background: #d93025; color: #fff; }
+  .meter { height: 8px; background: var(--info-bg); border-radius: 4px; overflow: hidden; flex: 1; min-width: 120px; }
+  .meter > i { display: block; height: 100%; width: 0; background: var(--brand); transition: width .08s; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+  .chip { font-size: .8rem; padding: 4px 10px; border-radius: 999px; }
+  .muted { color: var(--muted); font-size: .85rem; }
+  .q { color: var(--amber); font-weight: 600; margin: 8px 0; }
+  pre { background: var(--code-bg); padding: 10px; border-radius: 8px; overflow: auto; font-size: .78rem; margin: 8px 0 0; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); }
+  td.r, th.r { text-align: right; }
+  .tbl { max-height: 240px; overflow: auto; }
+  .ins { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .ins li { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: .9rem; }
+  .ins li.warn { background: var(--warn-bg); border-color: var(--warn); }
+  .ins li.good { background: var(--good-bg); border-color: var(--good); }
+  .ins li.info { background: var(--info-bg); }
+  .ins b { display: block; }
+  .act { font-size: .8rem; font-weight: 600; margin-top: 2px; }
+  .score { font-size: 2.4rem; font-weight: 700; line-height: 1; }
+  .bar { height: 10px; background: var(--info-bg); border-radius: 5px; overflow: hidden; margin: 8px 0 12px; }
+  .bar > i { display: block; height: 100%; background: var(--brand); }
+  ul.plain { margin: 4px 0 10px; padding-left: 18px; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .75rem; background: var(--info-bg); }
+  .note { font-size: .8rem; color: var(--muted); border-top: 1px dashed var(--line); margin-top: 12px; padding-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Vyapaar Sathi: voice, insights &amp; credit readiness</h1>
+  <p class="sub">Runs entirely in your browser: no server, no API keys. It uses the same parser, context, insight and scoring code as the app.</p>
+
+  <div class="grid">
+    <section class="card" aria-labelledby="h-voice">
+      <h2 id="h-voice"><span class="num">1</span> Bolo: voice entry</h2>
+      <div class="row">
+        <label for="lang">Language</label>
+        <select id="lang">
+          <option value="hi-IN">Hinglish / हिन्दी</option>
+          <option value="en-IN">English (India)</option>
+          <option value="pa-IN">ਪੰਜਾਬੀ</option>
+          <option value="mr-IN">मराठी</option>
+          <option value="ta-IN">தமிழ்</option>
+        </select>
+      </div>
+      <div class="row" style="margin:12px 0">
+        <button id="mic" class="mic" aria-pressed="false">Bolo</button>
+        <div style="flex:1;min-width:140px">
+          <div class="meter" aria-hidden="true"><i id="level"></i></div>
+          <div class="muted" id="capinfo">Mic idle</div>
+        </div>
+      </div>
+      <audio id="playback" controls hidden style="width:100%;margin-bottom:8px"></audio>
+      <div class="muted" id="live" aria-live="polite"></div>
+      <label for="text" style="display:block;margin-top:8px">Or type / edit the entry</label>
+      <form id="form" class="row" style="flex-wrap:nowrap">
+        <input id="text" type="text" autocomplete="off" placeholder="Ramesh ko 500 udhaar diya">
+        <button class="primary" type="submit">Samjho</button>
+      </form>
+      <div class="chips" id="chips" aria-label="Try an example"></div>
+      <div id="result"></div>
+      <p class="note">Mic capture uses MediaRecorder (the same code path as the app). Live speech-to-text here uses your browser's built-in recognizer when available (Chrome/Edge); the real app streams the audio to Bhashini / Whisper instead.</p>
+    </section>
+
+    <section class="card" aria-labelledby="h-ledger">
+      <h2 id="h-ledger"><span class="num">2</span> Ledger</h2>
+      <div class="row" style="margin-bottom:8px">
+        <button id="sample">Load 90 days of sample data</button>
+        <button id="clear">Clear</button>
+        <span class="muted" id="count"></span>
+      </div>
+      <div class="tbl"><table><thead><tr><th>Date</th><th>Type</th><th>Party</th><th class="r">₹</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <p class="note">Entries you save in step 1 land here. Everything below recomputes from this ledger.</p>
+    </section>
+
+    <section class="card" aria-labelledby="h-ins">
+      <h2 id="h-ins"><span class="num">3</span> This week's insights</h2>
+      <div class="row" style="margin-bottom:8px">
+        <label for="ilang">Language</label>
+        <select id="ilang"><option value="hinglish">Hinglish</option><option value="en">English</option></select>
+      </div>
+      <ul class="ins" id="insights"></ul>
+    </section>
+
+    <section class="card" aria-labelledby="h-cr">
+      <h2 id="h-cr"><span class="num">4</span> Credit readiness</h2>
+      <div class="row" style="margin-bottom:8px">
+        <label><input type="checkbox" id="udyam"> Udyam registered</label>
+        <label><input type="checkbox" id="bank" checked> Business bank account</label>
+      </div>
+      <div id="readiness"></div>
+      <p class="note">The score is computed from your ledger by fixed rules. The app's AI copilot only explains it and matches government schemes (it needs the server + pgvector, so it is not part of this offline demo).</p>
+    </section>
+  </div>
+</div>
+
+<script>
+// ---- dates ----
+/** Tiny date helpers on ISO "YYYY-MM-DD" strings (UTC math, so no DST/timezone drift). */
+
+const pad = (n        ) => String(n).padStart(2, "0");
+
+/** Today's date in the *device's local* timezone (an IST shop at 1 AM is still "today"). */
+function todayISO(now       = new Date())         {
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+function toMs(iso        )         {
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  return Date.UTC(y, m - 1, d);
+}
+
+function fromMs(ms        )         {
+  const d = new Date(ms);
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}
+
+function addDays(iso        , n        )         {
+  return fromMs(toMs(iso) + n * 86_400_000);
+}
+
+/** Whole days from a to b (b - a). */
+function daysBetween(a        , b        )         {
+  return Math.round((toMs(b) - toMs(a)) / 86_400_000);
+}
+
+const monthOf = (iso        ) => iso.slice(0, 7);
+
+// ---- numbers ----
+/**
+ * Tokenizer + spoken-number extractor for Hindi / Hinglish / English (Roman and Devanagari).
+ *
+ *   "do hazaar paanch sau"  -> 2500      "dedh sau" -> 150      "saade teen sau" -> 350
+ *   "sawa lakh"             -> 125000    "paune do sau" -> 175  "5 hazaar" -> 5000
+ *   "five hundred" -> 500   "2k" -> 2000 "पाँच सौ" -> 500
+ *
+ * Coverage: Hindi 1-99 (common romanisations), 1-20 + tens in Devanagari, English words.
+ * Anything exotic is left to the LLM parser; this module is the offline/deterministic layer.
+ */
+
+                        
+              
+                                          
+            
+                
+              
+ 
+
+                             
+                
+                                
+               
+             
+ 
+
+const DIGIT_SETS = ["०१२३४५६७८९", "੦੧੨੩੪੫੬੭੮੯", "௦௧௨௩௪௫௬௭௮௯", "૦૧૨૩૪૫૬૭૮૯", "০১২৩৪৫৬৭৮৯"];
+
+/** 1:1 replacement, so character offsets stay valid. */
+function normalizeDigits(text        )         {
+  let out = "";
+  for (const ch of text) {
+    let r = ch;
+    for (const set of DIGIT_SETS) {
+      const i = set.indexOf(ch);
+      if (i >= 0) {
+        r = String(i);
+        break;
+      }
+    }
+    out += r;
+  }
+  return out;
+}
+
+function normalizeWord(w        )         {
+  return w
+    .toLowerCase()
+    .normalize("NFC")
+    .replace(/़/g, "") // nukta
+    .replace(/ँ/g, "ं"); // chandrabindu -> anusvara
+}
+
+const TOKEN_RE = /\d+(?:,\d{2,3})*(?:\.\d+)?k?|[\p{L}\p{M}]+|₹/giu;
+
+function tokenize(text        )          {
+  const src = normalizeDigits(text);
+  const out          = [];
+  for (const m of src.matchAll(TOKEN_RE)) {
+    const raw = m[0];
+    out.push({ raw, n: normalizeWord(raw), start: m.index ?? 0, end: (m.index ?? 0) + raw.length });
+  }
+  return out;
+}
+
+// ---- number words ---------------------------------------------------------------------------
+const HINDI_1_99 =
+  "ek do teen chaar paanch chhe saat aath nau das " +
+  "gyarah barah terah chaudah pandrah solah satrah atharah unnis bees " +
+  "ikkis baais teis chaubis pachchis chhabbis sattais atthais unattis tees " +
+  "iktis battis taintis chauntis paintis chhattis saintis adtis untalis chalis " +
+  "iktalis bayalis taintalis chauvalis paintalis chhiyalis saintalis adtalis unchas pachas " +
+  "ikyavan baavan tirpan chauvan pachpan chhappan sattavan atthavan unsath saath " +
+  "iksath baasath tirsath chausath painsath chhiyasath adsath arsath unhattar sattar " +
+  "ikhattar bahattar tihattar chauhattar pachhattar chhihattar satattar athattar unyasi assi " +
+  "ikyasi bayasi tirasi chaurasi pachasi chhiyasi sattasi atthasi navasi nabbe " +
+  "ikyanve baanve tiranve chauranve pachanve chhiyanve sattanve atthanve ninyanve";
+
+const NUM                         = {};
+HINDI_1_99.split(" ").forEach((w, i) => (NUM[w] = i + 1));
+
+// common alternate spellings
+Object.assign(NUM, {
+  char: 4, chaar: 4, panch: 5, pach: 5, chhah: 6, chah: 6, che: 6, chheh: 6, chhey: 6, aat: 8, nao: 9, nou: 9,
+  gyaarah: 11, gyara: 11, baarah: 12, tera: 13, chaudha: 14, pandra: 15,
+  sola: 16, satra: 17, athara: 18, unis: 19, bis: 20, ikis: 21, pachis: 25, pachees: 25, pachchees: 25,
+  chhabbees: 26, tis: 30, chalees: 40, pachaas: 50, assee: 80, nabbay: 90,
+  // Devanagari 1-20 + tens
+  "एक": 1, "दो": 2, "तीन": 3, "चार": 4, "पाँच": 5, "पांच": 5, "छह": 6, "छः": 6, "छे": 6, "सात": 7, "आठ": 8,
+  "नौ": 9, "दस": 10, "ग्यारह": 11, "बारह": 12, "तेरह": 13, "चौदह": 14, "पंद्रह": 15, "पन्द्रह": 15,
+  "सोलह": 16, "सत्रह": 17, "अठारह": 18, "उन्नीस": 19, "बीस": 20, "तीस": 30, "चालीस": 40, "पचास": 50,
+  "साठ": 60, "सत्तर": 70, "अस्सी": 80, "नब्बे": 90,
+  // English
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11,
+  twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
+  twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+  // fractions that behave like plain values
+  dedh: 1.5, derh: 1.5, "डेढ़": 1.5, "डेढ": 1.5, dhai: 2.5, dhaai: 2.5, adhai: 2.5, "ढाई": 2.5, sawa: 1.25, sava: 1.25, "सवा": 1.25,
+});
+const ENGLISH_TENS = new Set(["twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]);
+const ENGLISH_ONES = new Set(["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]);
+
+const MULT                         = {
+  sau: 100, "सौ": 100, hundred: 100,
+  hazaar: 1_000, hazar: 1_000, hajar: 1_000, hajaar: 1_000, "हज़ार": 1_000, "हजार": 1_000, thousand: 1_000,
+  lakh: 100_000, lac: 100_000, lakhs: 100_000, lacs: 100_000, "लाख": 100_000,
+  crore: 10_000_000, karod: 10_000_000, "करोड": 10_000_000, "करोड़": 10_000_000,
+};
+
+/** "saade"=+0.5 on the next number, "paune"=-0.25 */
+const PREFIX                         = { saade: 0.5, sade: 0.5, "साढ़े": 0.5, "साढे": 0.5, paune: -0.25, "पौने": -0.25 };
+
+const round = (n        ) => Math.round(n * 100) / 100;
+
+function extractNumbers(tokens         )               {
+  const out               = [];
+  let total = 0;
+  let cur                = null;
+  let pend = 0;
+  let from = -1;
+  let to = -1;
+  let last                                     = null;
+  let lastWord = "";
+
+  const reset = () => {
+    total = 0; cur = null; pend = 0; from = -1; to = -1; last = null; lastWord = "";
+  };
+  const flush = () => {
+    if (from >= 0 && (cur !== null || total > 0)) out.push({ value: round(total + (cur ?? 0)), from, to });
+    reset();
+  };
+
+  tokens.forEach((t, i) => {
+    const w = t.n;
+    const isDigit = /^\d/.test(w);
+
+    if (isDigit || (w in NUM && !(w in MULT))) {
+      let v        ;
+      if (isDigit) {
+        v = parseFloat(w.replace(/,/g, ""));
+        if (w.endsWith("k")) v *= 1000;
+      } else v = NUM[w];
+
+      const englishCombo = last === "value" && ENGLISH_TENS.has(lastWord) && ENGLISH_ONES.has(w);
+      if (last === "value" && !englishCombo) flush();
+      if (from < 0) from = i;
+      cur = (cur ?? 0) + v + pend;
+      pend = 0;
+      last = "value";
+      lastWord = w;
+      to = i;
+    } else if (w in PREFIX) {
+      if (last === "value") flush();
+      if (from < 0) from = i;
+      pend = PREFIX[w];
+      last = "prefix";
+      to = i;
+    } else if (w in MULT) {
+      const m = MULT[w];
+      if (from < 0) from = i;
+      if (m === 100) {
+        cur = (cur ?? 1) * 100;
+      } else {
+        total += (cur ?? 1) * m;
+        cur = null;
+      }
+      pend = 0;
+      last = "mult";
+      lastWord = w;
+      to = i;
+    } else {
+      flush();
+    }
+  });
+  flush();
+  return out;
+}
+
+/** Convenience: numbers in a raw string. */
+function numbersIn(text        )           {
+  return extractNumbers(tokenize(text)).map((s) => s.value);
+}
+
+// ---- sanity ----
+                                                 
+
+const CREDIT_INTENTS = ["credit_given", "credit_received", "payment_received", "payment_made"]         ;
+
+                                                    
+
+function missingFields(t                   )            {
+  const m            = [];
+  if (t.intent === "unknown") m.push("intent");
+  if (t.intent !== "query" && t.amount == null) m.push("amount");
+  if ((CREDIT_INTENTS                     ).includes(t.intent) && !t.party) m.push("party");
+  return m;
+}
+
+/** Deterministic guard-rails on top of any parser (LLM or rules). Never lowers an existing flag. */
+function sanityCheck(t                   )                    {
+  const out                    = { ...t, items: t.items ?? [] };
+  if (out.amount == null && out.items.length) {
+    const total = out.items.reduce((s, i) => s + (i.quantity ?? 0) * (i.unit_price ?? 0), 0);
+    if (total > 0) out.amount = total;
+  }
+  if (missingFields(out).length) out.needs_confirmation = true;
+  if (out.amount != null && out.amount > 1_000_000) out.needs_confirmation = true; // likely mis-heard
+  if (out.confidence < 0.6) out.needs_confirmation = true;
+  return out;
+}
+
+/** Recompute the confirmation flag from scratch (used after merging context). */
+function recheck(t                   )                    {
+  return sanityCheck({ ...t, needs_confirmation: false });
+}
+
+// ---- ruleParser ----
+/**
+ * Deterministic Hinglish/Hindi ledger-entry parser. No network, no API key.
+ * Used (a) offline, (b) when the LLM is unavailable, (c) as a fast first pass.
+ * Confidence is capped at 0.85 so a human always sees the confirmation card for weak parses.
+ */
+                                                                                       
+
+
+
+const set = (s        ) => new Set(s.split(/\s+/).filter(Boolean));
+
+const CREDIT = set("udhaar udhar udhari udhaari baaki baki khata khaata उधार उधारी बाकी खाता");
+const GAVE = set("diya diye di dediya dediye dedia दिया दिए दी");
+const TOOK = set("liya liye li lia लिया लिए ली");
+const SELL = set("becha bech bechi bechna bika bikra bikri sale sold बेचा बेच बिक्री बिका");
+const BUY = set("kharida kharide kharidi kharid khareed purchase bought maal stock खरीदा खरीद माल");
+const EXPENSE = set(
+  "kiraya kiraye rent bijli electricity bill salary tankhwah tankha kharcha kharch expense petrol transport bhada chai किराया बिजली तनख्वाह खर्चा खर्च"
+);
+const MONEY_IN = set("jama wapas vapas chukaya chukaye chuka mila mile aaya aaye जमा वापस चुकाया मिला मिले आया");
+const MONEY_OUT = set("chukaya chukaye bhara bhare bhugtan payment bheja bheje bhej भरा");
+const SUPPLIER = set("supplier wholesaler dukandar mahajan distributor vendor सप्लायर");
+const QUERY = set("kitna kitne kitni batao bataiye dikhao dikha balance कितना कितने बताओ");
+const CURRENCY = set("rupaye rupay rupaya rupiya rupees rupee rs inr ₹ रुपये रुपए रुपया");
+const MARKERS = set("ko se ne को से ने");
+const POSSESSIVE = set("ka ki ke का की के");
+const HONORIFIC = set("bhai bhaiya ji didi seth sethji uncle aunty mama chacha bhabhi भाई जी दीदी सेठ");
+const TODAY = set("aaj today आज");
+const YESTERDAY = set("kal yesterday कल");
+const DAY_BEFORE = set("parso parson परसों परसो");
+
+const UNIT_ALIASES                           = {
+  kg: ["kilo", "kg", "kilogram", "kilos", "किलो"],
+  g: ["gram", "grams", "gm", "gms", "ग्राम"],
+  litre: ["litre", "liter", "ltr", "litres", "लीटर"],
+  packet: ["packet", "packets", "pkt", "पैकेट"],
+  dozen: ["dozen", "darjan", "दर्जन"],
+  piece: ["piece", "pieces", "pcs", "nag"],
+  bag: ["bori", "bag", "bags", "बोरी"],
+};
+const UNIT_OF = new Map                ();
+for (const [canon, aliases] of Object.entries(UNIT_ALIASES)) aliases.forEach((a) => UNIT_OF.set(a, canon));
+
+const PAYMENT_WORDS                               = [
+  [set("upi gpay googlepay phonepe paytm bhim qr scanner"), "upi"],
+  [set("card"), "card"],
+  [set("cash nakad naqad nagad नकद"), "cash"],
+];
+const PAYMENT_ALL = new Set        (PAYMENT_WORDS.flatMap(([s]) => [...s]));
+
+const PRONOUNS = set("usko unko isko unhe usse unse wahi wohi same usi");
+const hasPronoun = (toks         ) => toks.some((t) => PRONOUNS.has(t.n));
+
+/** words that can never be a person's name */
+const NOT_NAME = new Set        ([
+  ...CREDIT, ...GAVE, ...TOOK, ...SELL, ...BUY, ...EXPENSE, ...MONEY_IN, ...MONEY_OUT, ...SUPPLIER, ...QUERY,
+  ...CURRENCY, ...MARKERS, ...POSSESSIVE, ...TODAY, ...YESTERDAY, ...DAY_BEFORE, ...PAYMENT_ALL, ...PRONOUNS,
+  ...set("maine mujhe mujhko usne unhone mein me par aur phir bhi yeh woh wo hai hain tha the kar kiya kiye ek do"),
+  ...UNIT_OF.keys(),
+]);
+
+const isWord = (t       ) => /^[\p{L}\p{M}]+$/u.test(t.raw);
+
+function titleCase(words          )         {
+  return words.map((w) => (/^[a-z]/i.test(w) ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w)).join(" ");
+}
+
+                    
+               
+                 
+ 
+
+function findParty(toks         , inNumber             )                  {
+  const candidateAt = (j        )                => {
+    if (j < 0 || inNumber.has(j)) return null;
+    const t = toks[j];
+    if (!isWord(t)) return null;
+    if (HONORIFIC.has(t.n) && j > 0 && !inNumber.has(j - 1) && isWord(toks[j - 1]) && !NOT_NAME.has(toks[j - 1].n)) {
+      return titleCase([toks[j - 1].raw, t.raw]);
+    }
+    if (NOT_NAME.has(t.n) || HONORIFIC.has(t.n)) return null;
+    return titleCase([t.raw]);
+  };
+
+  for (let i = 0; i < toks.length; i++) {
+    if (MARKERS.has(toks[i].n)) {
+      const name = candidateAt(i - 1);
+      if (name) return { name, marker: toks[i].n };
+    }
+    // "<name> ka udhaar/baaki"
+    if (POSSESSIVE.has(toks[i].n) && i + 1 < toks.length && CREDIT.has(toks[i + 1].n)) {
+      const name = candidateAt(i - 1);
+      if (name) return { name, marker: "ka" };
+    }
+  }
+  return null;
+}
+
+function parseItems(toks         , spans              )                                                      {
+  const items                    = [];
+  const qtySpans = new Set        ();
+  spans.forEach((s, si) => {
+    const unitTok = toks[s.to + 1];
+    const unit = unitTok ? UNIT_OF.get(unitTok.n) : undefined;
+    if (!unit) return;
+    qtySpans.add(si);
+    const nameWords           = [];
+    for (let j = s.to + 2; j < toks.length && nameWords.length < 3; j++) {
+      const t = toks[j];
+      if (!isWord(t) || NOT_NAME.has(t.n) || CURRENCY.has(t.n) || spans.some((x) => j >= x.from && j <= x.to)) break;
+      nameWords.push(t.raw);
+    }
+    if (nameWords.length) items.push({ name: nameWords.join(" "), quantity: s.value, unit, unit_price: null });
+  });
+  return { items, qtySpans };
+}
+
+function ruleParse(text        , opts                     = {})                    {
+  const today = opts.today ?? todayISO();
+  const toks = tokenize(text);
+  const words = toks.map((t) => t.n);
+  const has = (s             ) => words.some((w) => s.has(w));
+  const spans = extractNumbers(toks);
+
+  const inNumber = new Set        ();
+  spans.forEach((s) => {
+    for (let i = s.from; i <= s.to; i++) inNumber.add(i);
+  });
+
+  // ---- amount & items ----
+  const { items, qtySpans } = parseItems(toks, spans);
+  const candidates = spans
+    .map((s, idx) => ({ s, idx }))
+    .filter(({ s, idx }) => {
+      if (qtySpans.has(idx)) return false;
+      const withCurrency = CURRENCY.has(toks[s.to + 1]?.n ?? "") || CURRENCY.has(toks[s.from - 1]?.n ?? "");
+      const hasDigit = toks.slice(s.from, s.to + 1).some((t) => /^\d/.test(t.n));
+      const singleSmallWord = s.from === s.to && !hasDigit && s.value < 100;
+      return !(singleSmallWord && !withCurrency); // "de do" must not become amount=2
+    });
+  const withCur = candidates.find(
+    ({ s }) => CURRENCY.has(toks[s.to + 1]?.n ?? "") || CURRENCY.has(toks[s.from - 1]?.n ?? "")
+  );
+  const best = withCur ?? [...candidates].sort((a, b) => b.s.value - a.s.value)[0];
+  const amount = best ? best.s.value : null;
+
+  // ---- party ----
+  const partyHit = findParty(toks, inNumber);
+
+  // ---- intent ----
+  const credit = has(CREDIT);
+  const gave = has(GAVE);
+  const took = has(TOOK);
+  let intent         = "unknown";
+
+  if (amount == null && (has(QUERY) || /[?？]/.test(text))) intent = "query";
+  else if (partyHit?.marker === "ne" && (has(MONEY_IN) || gave) && !has(SELL) && !has(BUY)) intent = "payment_received";
+  else if (credit && (took || (partyHit?.marker === "se" && !gave && !has(SELL)))) intent = "credit_received";
+  else if (credit) intent = "credit_given";
+  else if (has(EXPENSE) && !has(SELL)) intent = "expense";
+  else if (has(BUY)) intent = "purchase";
+  else if (has(SELL)) intent = "sale";
+  else if (partyHit && has(MONEY_OUT) && (has(SUPPLIER) || partyHit.marker === "ko")) intent = "payment_made";
+  else if (has(MONEY_IN) && (partyHit || hasPronoun(toks))) intent = "payment_received";
+
+  // ---- payment mode ----
+  let payment_mode              = "unknown";
+  for (const [ws, mode] of PAYMENT_WORDS) if (has(ws)) payment_mode = mode;
+  if (intent === "credit_given" || intent === "credit_received") payment_mode = "credit";
+
+  // ---- date ----
+  let date                = today;
+  let notes                = null;
+  if (has(DAY_BEFORE)) date = addDays(today, -2);
+  else if (has(YESTERDAY)) {
+    date = addDays(today, -1);
+    notes = "'kal' assumed to mean yesterday";
+  } else if (!has(TODAY)) date = today;
+
+  // ---- confidence ----
+  let confidence = 0.5;
+  if (amount != null) confidence += 0.15;
+  if (intent !== "unknown") confidence += 0.15;
+  if (partyHit) confidence += 0.05;
+  if (items.length) confidence += 0.05;
+  confidence = Math.min(confidence, 0.85);
+
+  return sanityCheck({
+    intent,
+    amount,
+    party: intent === "query" && !partyHit ? null : partyHit?.name ?? null,
+    items,
+    payment_mode,
+    date,
+    notes,
+    confidence,
+    needs_confirmation: false,
+  });
+}
+
+// ---- context ----
+/**
+ * Conversational context for multi-turn voice entry.
+ *
+ *   "Ramesh ko 500 udhaar diya"  -> credit_given, Ramesh, 500
+ *   "aur 200 de diya"            -> same party + intent, amount 200        (continuation)
+ *   "usko 100 wapas mile"        -> party resolved from the previous turn   (pronoun)
+ *   "paanch sau" after "Kitne rupaye?"  -> fills the missing amount         (clarification)
+ *
+ * Pure functions: the caller keeps the ConversationContext in component state.
+ */
+                                                           
+
+
+
+const MAX_TURNS = 6;
+const emptyContext = ()                      => ({ turns: [] });
+
+function pushTurn(ctx                     , text        , intent                   )                      {
+  return { turns: [...ctx.turns, { text, intent }].slice(-MAX_TURNS) };
+}
+
+function pendingOf(ctx                     )                                                           {
+  const last = ctx.turns[ctx.turns.length - 1];
+  if (!last) return null;
+  const missing = missingFields(last.intent);
+  return missing.length ? { intent: last.intent, missing } : null;
+}
+
+const CONTINUATION = new Set(["aur", "phir", "bhi", "again", "more", "also", "और", "फिर", "भी"]);
+const FILLER = new Set(["ko", "se", "ne", "ka", "ki", "ke", "को", "से", "ने", "का", "की", "के", "hai", "hain", "naam", "name"]);
+
+const lastWhere = (ctx                     , f                      )                   =>
+  [...ctx.turns].reverse().find(f);
+
+function resolveTurn(
+  text        ,
+  parsed                   ,
+  ctx                     
+)                                                 {
+  const toks = tokenize(text);
+  const notes           = [];
+  const pending = pendingOf(ctx);
+  const isFreshEntry = parsed.intent !== "unknown" && parsed.amount != null;
+
+  // 1) answer to a clarification question
+  if (pending && !isFreshEntry && toks.length <= 5) {
+    const merged                    = { ...pending.intent };
+    let used = false;
+    if (pending.missing.includes("amount") && parsed.amount != null) {
+      merged.amount = parsed.amount;
+      used = true;
+    }
+    if (pending.missing.includes("party") && parsed.amount == null && toks.length <= 3) {
+      const words = toks.filter((t) => /^[\p{L}\p{M}]+$/u.test(t.raw) && !FILLER.has(t.n)).map((t) => t.raw);
+      if (words.length) {
+        merged.party = words.map((w) => (/^[a-z]/i.test(w) ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w)).join(" ");
+        used = true;
+      }
+    }
+    if (pending.missing.includes("intent") && parsed.intent !== "unknown") {
+      merged.intent = parsed.intent;
+      if (!merged.party && parsed.party) merged.party = parsed.party;
+      if (merged.payment_mode === "unknown") merged.payment_mode = parsed.payment_mode;
+      used = true;
+    }
+    if (used) {
+      notes.push("answered previous question");
+      return { intent: recheck({ ...merged, confidence: Math.max(merged.confidence, 0.7) }), notes };
+    }
+  }
+
+  let out                    = { ...parsed };
+
+  // 2) continuation: "aur 200 de diya"
+  if (out.intent === "unknown" && out.amount != null && toks.some((t) => CONTINUATION.has(t.n))) {
+    const prev = lastWhere(ctx, (t) => t.intent.intent !== "unknown" && t.intent.intent !== "query");
+    if (prev) {
+      out = {
+        ...prev.intent,
+        amount: out.amount,
+        items: [],
+        date: out.date ?? prev.intent.date,
+        confidence: Math.min(prev.intent.confidence, 0.7),
+        needs_confirmation: false,
+      };
+      notes.push(`continued previous entry (${prev.intent.intent})`);
+    }
+  }
+
+  // 3) pronoun / same party
+  if (!out.party && hasPronoun(toks)) {
+    const prev = lastWhere(ctx, (t) => !!t.intent.party);
+    if (prev) {
+      out.party = prev.intent.party;
+      notes.push(`party taken from previous entry (${prev.intent.party})`);
+    }
+  }
+
+  return { intent: recheck(out), notes };
+}
+
+const QUESTIONS                                          = {
+  hinglish: {
+    amount: "Kitne rupaye?",
+    party: "Kiska naam hai? (kisko/kisse)",
+    intent: "Yeh bikri hai, kharid, kharcha ya udhaar?",
+  },
+  hi: {
+    amount: "कितने रुपये?",
+    party: "किसका नाम है?",
+    intent: "यह बिक्री है, खरीद, खर्चा या उधार?",
+  },
+  en: {
+    amount: "How much (in rupees)?",
+    party: "Who is the customer/supplier?",
+    intent: "Is this a sale, purchase, expense or credit?",
+  },
+};
+
+/** The one follow-up question to ask next (most important missing field first), or null. */
+function nextQuestion(intent                   , language           = "hinglish")                {
+  const missing = missingFields(intent);
+  if (!missing.length) return null;
+  const order            = ["intent", "amount", "party"];
+  const first = order.find((m) => missing.includes(m));
+  if (!first) return null;
+  return (QUESTIONS[language] ?? QUESTIONS.hinglish)[first];
+}
+
+// ---- readiness ----
+/**
+ * Deterministic credit-readiness signals computed from ledger metrics.
+ * The LLM only EXPLAINS these numbers; it never invents them.
+ */
+                                  
+                                                                  
+                           
+                     
+                           
+                                                       
+                                                          
+                                    
+                                    
+                                                       
+                                                            
+                                                                      
+ 
+
+                                  
+                          
+                                               
+                      
+                 
+                      
+ 
+
+function assessReadiness(p                 )                  {
+  let score = 0;
+  const strengths           = [];
+  const gaps           = [];
+  const nextSteps           = [];
+
+  // Record history (30)
+  const hist = Math.min(p.monthsOfRecords / 12, 1) * 30;
+  score += hist;
+  (p.monthsOfRecords >= 6 ? strengths : gaps).push(
+    p.monthsOfRecords >= 6 ? `${p.monthsOfRecords} months of ledger history` : `Only ${p.monthsOfRecords} month(s) of records; lenders like 6-12`
+  );
+
+  // Consistency (20)
+  score += Math.min(p.activeDaysPerMonth / 20, 1) * 20;
+  if (p.activeDaysPerMonth < 15) nextSteps.push("Log entries on more days so income looks consistent");
+  else strengths.push("Regular daily record-keeping");
+
+  // Profitability margin (20)
+  const margin = p.avgMonthlyTurnover > 0 ? (p.avgMonthlyTurnover - p.avgMonthlyExpenses) / p.avgMonthlyTurnover : 0;
+  score += Math.max(0, Math.min(margin / 0.2, 1)) * 20;
+  (margin > 0.1 ? strengths : gaps).push(margin > 0.1 ? "Healthy profit margin" : "Thin or negative margin on recorded data");
+
+  // Digital trail (15)
+  score += Math.min(p.digitalPaymentShare / 0.5, 1) * 15;
+  if (p.digitalPaymentShare < 0.3) nextSteps.push("Accept more UPI payments: bank-visible income helps loan approval");
+  else strengths.push("Good share of digital payments");
+
+  // Formalisation (10)
+  if (p.hasUdyam) { score += 5; strengths.push("Udyam registered"); }
+  else { gaps.push("No Udyam registration"); nextSteps.unshift("Register on Udyam (free) before applying for other schemes"); }
+  if (p.hasBankAccount) score += 5;
+  else { gaps.push("No business bank account"); nextSteps.unshift("Open/link a bank account for business receipts"); }
+
+  // Receivables health (5)
+  score += (1 - Math.min(p.overdueCreditShare, 1)) * 5;
+  if (p.overdueCreditShare > 0.3) nextSteps.push("Collect overdue udhaar; heavy unpaid credit weakens cash flow");
+
+  score = Math.round(score);
+  const band = score >= 75 ? "strong" : score >= 55 ? "good" : score >= 35 ? "building" : "low";
+  return { score, band, strengths, gaps, nextSteps };
+}
+
+// ---- ledgerStats ----
+/**
+ * Deterministic ledger analytics. Every number the Copilot / Insights panel shows comes from here;
+ * the LLM only narrates it. Pure functions: works offline, on IndexedDB rows or server rows alike.
+ */
+                                                   
+                                                   
+
+const OVERDUE_DAYS = 30;
+const amt = (t           ) => (typeof t.amount === "number" && t.amount > 0 ? t.amount : 0);
+const key = (p        ) => p.trim().toLowerCase();
+
+function totals(txns             )               {
+  let sales = 0, purchases = 0, expenses = 0;
+  const days = new Set        ();
+  for (const t of txns) {
+    days.add(t.date);
+    if (t.intent === "sale" || t.intent === "credit_given") sales += amt(t);
+    else if (t.intent === "purchase") purchases += amt(t);
+    else if (t.intent === "expense") expenses += amt(t);
+  }
+  return { sales, purchases, expenses, profit: sales - purchases - expenses, txnCount: txns.length, activeDays: days.size };
+}
+
+/** First-in-first-out settlement: payments clear the oldest credit first. */
+function balances(txns             , creditIntent        , payIntent        , asOf        )                 {
+  const names = new Map                ();
+  const credits = new Map                                          ();
+  const paid = new Map                ();
+
+  for (const t of [...txns].sort((a, b) => a.date.localeCompare(b.date))) {
+    if (!t.party || !amt(t)) continue;
+    const k = key(t.party);
+    if (!names.has(k)) names.set(k, t.party.trim());
+    if (t.intent === creditIntent) {
+      if (!credits.has(k)) credits.set(k, []);
+      credits.get(k) .push({ date: t.date, left: amt(t) });
+    } else if (t.intent === payIntent) {
+      paid.set(k, (paid.get(k) ?? 0) + amt(t));
+    }
+  }
+
+  const out                 = [];
+  for (const [k, list] of credits) {
+    let pay = paid.get(k) ?? 0;
+    for (const c of list) {
+      const used = Math.min(c.left, pay);
+      c.left -= used;
+      pay -= used;
+    }
+    const open = list.filter((c) => c.left > 0.001);
+    const outstanding = open.reduce((s, c) => s + c.left, 0);
+    if (outstanding > 0) {
+      const oldestDate = open[0].date;
+      out.push({ party: names.get(k) , outstanding, oldestDate, daysOld: daysBetween(oldestDate, asOf) });
+    }
+  }
+  return out.sort((a, b) => b.outstanding - a.outstanding);
+}
+
+function computeStats(all             , asOf         = todayISO(), periodDays = 7)              {
+  const txns = all.filter((t) => t.date <= asOf); // "as of" means: ignore anything recorded later
+  const inWindow = (t           , fromAgo        , toAgo        ) => {
+    const d = daysBetween(t.date, asOf);
+    return d >= fromAgo && d <= toAgo;
+  };
+  const thisPeriod = totals(txns.filter((t) => inWindow(t, 0, periodDays - 1)));
+  const prevPeriod = totals(txns.filter((t) => inWindow(t, periodDays, 2 * periodDays - 1)));
+
+  const receivables = balances(txns, "credit_given", "payment_received", asOf);
+  const payables = balances(txns, "credit_received", "payment_made", asOf);
+  const overdue = receivables.filter((p) => (p.daysOld ?? 0) > OVERDUE_DAYS);
+
+  // digital share over the last 30 days of direct (non-credit) sales
+  let direct = 0, digital = 0;
+  const perDay = new Map                ();
+  for (const t of txns) {
+    if (t.intent === "sale" || t.intent === "credit_given") {
+      perDay.set(t.date, (perDay.get(t.date) ?? 0) + amt(t));
+    }
+    if (t.intent === "sale" && inWindow(t, 0, 29)) {
+      direct += amt(t);
+      if (t.payment_mode === "upi" || t.payment_mode === "card") digital += amt(t);
+    }
+  }
+  const best = [...perDay.entries()]
+    .filter(([d]) => inWindow({ date: d }             , 0, periodDays - 1))
+    .sort((a, b) => b[1] - a[1])[0];
+
+  return {
+    asOf,
+    periodDays,
+    thisPeriod,
+    prevPeriod,
+    salesChangePct: prevPeriod.sales > 0 ? ((thisPeriod.sales - prevPeriod.sales) / prevPeriod.sales) * 100 : null,
+    receivables: { total: receivables.reduce((s, p) => s + p.outstanding, 0), parties: receivables },
+    payables: { total: payables.reduce((s, p) => s + p.outstanding, 0), parties: payables },
+    overdue,
+    overdueTotal: overdue.reduce((s, p) => s + p.outstanding, 0),
+    digitalShare: direct > 0 ? digital / direct : null,
+    bestDay: best ? { date: best[0], sales: best[1] } : null,
+  };
+}
+
+/** Turns raw ledger rows into the inputs the credit-readiness score needs (no backend endpoint required). */
+function deriveProfile(
+  txns             ,
+  base                           = {},
+  asOf         = todayISO()
+)                  {
+  const months = new Set(txns.map((t) => monthOf(t.date)));
+  const n = Math.max(months.size, 1);
+  const all = totals(txns);
+
+  let direct = 0, digital = 0;
+  for (const t of txns) {
+    if (t.intent === "sale") {
+      direct += amt(t);
+      if (t.payment_mode === "upi" || t.payment_mode === "card") digital += amt(t);
+    }
+  }
+  const stats = computeStats(txns, asOf);
+
+  return {
+    ...base,
+    monthsOfRecords: months.size,
+    avgMonthlyTurnover: all.sales / n,
+    avgMonthlyExpenses: (all.purchases + all.expenses) / n,
+    activeDaysPerMonth: new Set(txns.map((t) => t.date)).size / n,
+    digitalPaymentShare: direct > 0 ? digital / direct : 0,
+    overdueCreditShare: stats.receivables.total > 0 ? stats.overdueTotal / stats.receivables.total : 0,
+  };
+}
+
+// ---- insightRules ----
+/**
+ * Rule-based business insights (works offline, no LLM). The LLM layer in insights.ts only rewrites
+ * these facts in the merchant's language; it is never the source of a number.
+ */
+                                                 
+
+                                            
+                          
+             
+                                     
+                
+                 
+                  
+ 
+
+const inr = (n        ) => `₹${Math.round(n).toLocaleString("en-IN")}`;
+const pick = (lang             , hinglish        , en        ) => (lang === "en" ? en : hinglish);
+const RANK = { warn: 0, good: 1, info: 2 }         ;
+
+/** What changed since the previous insight run (the "loop": each run is compared with the last). */
+function changesSince(prev             , cur             , lang              = "hinglish")           {
+  const out           = [];
+  const dRec = cur.receivables.total - prev.receivables.total;
+  if (Math.abs(dRec) >= 100) {
+    out.push(
+      pick(
+        lang,
+        `Baaki udhaar ${dRec > 0 ? "badha" : "ghata"}: ${inr(prev.receivables.total)} se ${inr(cur.receivables.total)}.`,
+        `Receivables ${dRec > 0 ? "rose" : "fell"} from ${inr(prev.receivables.total)} to ${inr(cur.receivables.total)}.`
+      )
+    );
+  }
+  const prevOver = new Set(prev.overdue.map((p) => p.party.toLowerCase()));
+  const curOver = new Set(cur.overdue.map((p) => p.party.toLowerCase()));
+  const cleared = [...prevOver].filter((p) => !curOver.has(p));
+  const fresh = [...curOver].filter((p) => !prevOver.has(p));
+  if (cleared.length) out.push(pick(lang, `Purana udhaar chuka: ${cleared.join(", ")}.`, `Overdue cleared: ${cleared.join(", ")}.`));
+  if (fresh.length) out.push(pick(lang, `Naya overdue: ${fresh.join(", ")}.`, `Newly overdue: ${fresh.join(", ")}.`));
+  const dProfit = cur.thisPeriod.profit - prev.thisPeriod.profit;
+  if (prev.thisPeriod.txnCount > 0 && Math.abs(dProfit) >= 500) {
+    out.push(
+      pick(
+        lang,
+        `Munafa ${dProfit > 0 ? "badha" : "ghata"} ${inr(Math.abs(dProfit))} (pichhli baar se).`,
+        `Profit ${dProfit > 0 ? "up" : "down"} ${inr(Math.abs(dProfit))} since last check.`
+      )
+    );
+  }
+  return out;
+}
+
+function ruleInsights(s             , lang              = "hinglish")            {
+  const out            = [];
+  const { thisPeriod: cur, prevPeriod: prev } = s;
+
+  if (cur.txnCount < 3) {
+    out.push({
+      id: "few_entries",
+      severity: "info",
+      title: pick(lang, "Entries kam hain", "Not enough entries"),
+      detail: pick(
+        lang,
+        `Is hafte sirf ${cur.txnCount} entry hain. Roz entry daalne se sahi insights aur loan score milta hai.`,
+        `Only ${cur.txnCount} entries this week. Log daily for accurate insights and a better credit score.`
+      ),
+    });
+  }
+
+  if (s.salesChangePct != null && Math.abs(s.salesChangePct) >= 10) {
+    const up = s.salesChangePct > 0;
+    const pct = Math.abs(Math.round(s.salesChangePct));
+    out.push({
+      id: up ? "sales_up" : "sales_down",
+      severity: up ? "good" : "warn",
+      title: up ? pick(lang, `Bikri ${pct}% badhi`, `Sales up ${pct}%`) : pick(lang, `Bikri ${pct}% ghati`, `Sales down ${pct}%`),
+      detail: pick(
+        lang,
+        `Is hafte ${inr(cur.sales)}, pichhle hafte ${inr(prev.sales)}.`,
+        `This week ${inr(cur.sales)} vs ${inr(prev.sales)} last week.`
+      ),
+      action: up ? undefined : pick(lang, "Kaunsa saamaan kam bika, dekhein", "Check which items slowed down"),
+    });
+  }
+
+  if (cur.profit < 0 && cur.txnCount >= 3) {
+    out.push({
+      id: "loss",
+      severity: "warn",
+      title: pick(lang, "Is hafte ghata", "Loss this week"),
+      detail: pick(
+        lang,
+        `Bikri ${inr(cur.sales)} thi par maal + kharcha ${inr(cur.purchases + cur.expenses)}.`,
+        `Sales ${inr(cur.sales)} but purchases + expenses ${inr(cur.purchases + cur.expenses)}.`
+      ),
+    });
+  }
+
+  if (prev.expenses > 0 && cur.expenses > prev.expenses * 1.5 && cur.expenses > 500) {
+    out.push({
+      id: "expense_spike",
+      severity: "warn",
+      title: pick(lang, "Kharcha achanak badha", "Expenses spiked"),
+      detail: pick(
+        lang,
+        `Kharcha ${inr(cur.expenses)} (pichhle hafte ${inr(prev.expenses)}).`,
+        `Expenses ${inr(cur.expenses)} (${inr(prev.expenses)} last week).`
+      ),
+    });
+  }
+
+  if (s.overdue.length) {
+    const top = s.overdue.slice(0, 3).map((p) => `${p.party} ${inr(p.outstanding)} (${p.daysOld}d)`).join(", ");
+    out.push({
+      id: "overdue",
+      severity: "warn",
+      title: pick(lang, `${s.overdue.length} ka udhaar 30+ din purana`, `${s.overdue.length} overdue customer(s)`),
+      detail: `${top}. ${pick(lang, "Kul", "Total")} ${inr(s.overdueTotal)}.`,
+      action: pick(lang, "Aaj hi yaad dilayein", "Send a reminder today"),
+    });
+  } else if (s.receivables.total > 0 && s.receivables.total > Math.max(cur.sales, 1)) {
+    out.push({
+      id: "heavy_credit",
+      severity: "warn",
+      title: pick(lang, "Baaki bikri se zyada", "Receivables exceed weekly sales"),
+      detail: pick(
+        lang,
+        `Logon se ${inr(s.receivables.total)} lena hai, is hafte ki bikri ${inr(cur.sales)}.`,
+        `${inr(s.receivables.total)} outstanding vs ${inr(cur.sales)} sales this week.`
+      ),
+    });
+  }
+
+  if (s.digitalShare != null && s.digitalShare < 0.3 && cur.sales > 0) {
+    out.push({
+      id: "low_digital",
+      severity: "info",
+      title: pick(lang, "UPI kam hai", "Low UPI share"),
+      detail: pick(
+        lang,
+        `Sirf ${Math.round(s.digitalShare * 100)}% bikri UPI/card se. Bank record jitna zyada, loan milna utna aasaan.`,
+        `Only ${Math.round(s.digitalShare * 100)}% of sales via UPI/card. A bank trail makes loan approval easier.`
+      ),
+      action: pick(lang, "Dukaan par QR lagayein", "Display your UPI QR"),
+    });
+  }
+
+  if (s.bestDay && cur.txnCount >= 3) {
+    out.push({
+      id: "best_day",
+      severity: "info",
+      title: pick(lang, "Sabse achha din", "Best day"),
+      detail: `${s.bestDay.date}: ${inr(s.bestDay.sales)}`,
+    });
+  }
+
+  return out.sort((a, b) => RANK[a.severity] - RANK[b.severity]);
+}
+
+</script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const inrFmt = (n) => "₹" + Math.round(n).toLocaleString("en-IN");
+
+  // ---------- state ----------
+  let ctx = emptyContext();
+  let ledger = [];
+  let current = null; // the parsed entry awaiting confirmation
+  try { ledger = JSON.parse(localStorage.getItem("vs_demo_ledger") || "[]"); } catch { ledger = []; }
+  const persist = () => { try { localStorage.setItem("vs_demo_ledger", JSON.stringify(ledger)); } catch {} };
+
+  // ---------- 1. parse ----------
+  function handleText(raw) {
+    const text = raw.trim();
+    if (!text) return;
+    const parsed = sanityCheck(ruleParse(text, { today: todayISO() }));
+    const { intent, notes } = resolveTurn(text, parsed, ctx);
+    const question = nextQuestion(intent, "hinglish");
+    ctx = pushTurn(ctx, text, intent);
+    current = intent;
+    renderResult(intent, question, notes, text);
+  }
+
+  function renderResult(i, question, notes, text) {
+    const canSave = !question && i.intent !== "query" && i.intent !== "unknown";
+    $("result").innerHTML =
+      `<div class="row" style="justify-content:space-between;margin-top:6px"><b>${esc(i.intent.replace("_", " "))}</b>` +
+      `<span class="tag">confidence ${Math.round(i.confidence * 100)}%</span></div>` +
+      `<div>Amount: <b>${i.amount != null ? inrFmt(i.amount) : "—"}</b> · Party: <b>${esc(i.party || "—")}</b> · Date: ${esc(i.date || "—")}</div>` +
+      (i.items.length ? `<div class="muted">Items: ${i.items.map((x) => esc(`${x.name} ${x.quantity ?? ""}${x.unit ?? ""}`)).join(", ")}</div>` : "") +
+      (notes.length ? `<div class="muted">Context: ${notes.map(esc).join("; ")}</div>` : "") +
+      (question ? `<div class="q">${esc(question)} <span class="muted">(type or say the answer)</span></div>` :
+        i.needs_confirmation ? `<div class="q">Please check the details before saving.</div>` : "") +
+      `<div class="row" style="margin-top:8px"><button class="primary" id="save" ${canSave ? "" : "disabled"}>Save to ledger</button></div>` +
+      `<pre>${esc(JSON.stringify(i, null, 2))}</pre>`;
+    const save = $("save");
+    if (save) save.onclick = () => {
+      ledger.push({ id: Date.now(), intent: current.intent, amount: current.amount, party: current.party, date: current.date || todayISO(), payment_mode: current.payment_mode });
+      persist(); current = null; $("result").innerHTML = ""; $("text").value = ""; renderAll();
+    };
+  }
+
+  $("form").addEventListener("submit", (e) => { e.preventDefault(); handleText($("text").value); $("text").select(); });
+
+  const EXAMPLES = [
+    "Ramesh ko 500 udhaar diya",
+    "aur 200 de diya",
+    "usko 100 wapas mile",
+    "Ramesh ko udhaar diya",
+    "paanch sau",
+    "kal Suresh se do hazaar paanch sau ka maal udhaar liya",
+    "aaj 5 kilo chawal 250 rupaye mein becha UPI se",
+    "bijli bill 1200 bhara",
+    "रमेश को ५०० रुपये उधार दिया",
+  ];
+  EXAMPLES.forEach((ex) => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.textContent = ex;
+    b.onclick = () => { $("text").value = ex; handleText(ex); };
+    $("chips").appendChild(b);
+  });
+
+  // ---------- mic capture (same approach as lib/voice/useVoiceRecorder.ts) ----------
+  const MIMES = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
+  let rec = null, stream = null, actx = null, raf = 0, recognizer = null, chunks = [], bytes = 0, lastVoice = 0, t0 = 0, maxTimer = 0;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  function setMic(on) {
+    $("mic").classList.toggle("rec", on); $("mic").setAttribute("aria-pressed", String(on)); $("mic").textContent = on ? "Stop" : "Bolo";
+  }
+
+  async function startMic() {
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      $("capinfo").textContent = "This browser cannot record audio. Type the entry instead."; return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    } catch (e) {
+      $("capinfo").textContent = e && e.name === "NotAllowedError" ? "Microphone permission denied. Allow mic access and try again." : "Could not access the microphone.";
+      return;
+    }
+    const mime = MIMES.find((m) => MediaRecorder.isTypeSupported(m));
+    rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+    chunks = []; bytes = 0; $("live").textContent = ""; $("playback").hidden = true;
+    rec.ondataavailable = (e) => { if (e.data.size) { chunks.push(e.data); bytes += e.data.size; $("capinfo").textContent = `Recording: ${chunks.length} chunks · ${(bytes / 1024).toFixed(1)} KB · ${rec.mimeType || "default"}`; } };
+    rec.onstop = () => {
+      const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+      cleanup();
+      if (blob.size) { $("playback").src = URL.createObjectURL(blob); $("playback").hidden = false; }
+      $("capinfo").textContent = `Captured ${chunks.length} chunks · ${(blob.size / 1024).toFixed(1)} KB · ${blob.type}`;
+    };
+
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    actx = new Ctx(); const an = actx.createAnalyser(); an.fftSize = 512;
+    actx.createMediaStreamSource(stream).connect(an);
+    const buf = new Uint8Array(an.fftSize); lastVoice = performance.now(); t0 = lastVoice;
+    const tick = () => {
+      an.getByteTimeDomainData(buf);
+      let s = 0; for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; s += v * v; }
+      const r = Math.sqrt(s / buf.length);
+      $("level").style.width = Math.min(100, r * 400) + "%";
+      if (r > 0.02) lastVoice = performance.now();
+      if (performance.now() - lastVoice > 3000 && performance.now() - t0 > 3000) { stopMic(); return; } // silence auto-stop
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    maxTimer = setTimeout(stopMic, 30000);
+
+    if (SR) {
+      recognizer = new SR(); recognizer.lang = $("lang").value; recognizer.interimResults = true; recognizer.continuous = false;
+      recognizer.onresult = (ev) => {
+        let interim = "", final = "";
+        for (const r of ev.results) (r.isFinal ? (final += r[0].transcript) : (interim += r[0].transcript));
+        $("live").textContent = (final || interim) + (final ? "" : "…");
+        if (final) { $("text").value = final; handleText(final); }
+      };
+      recognizer.onerror = (e) => { $("live").textContent = "Speech recognition: " + e.error + " (you can still type)"; };
+      try { recognizer.start(); } catch {}
+    } else {
+      $("live").textContent = "No built-in speech recognition in this browser. The audio is captured; type the entry to continue.";
+    }
+    rec.start(250); setMic(true);
+  }
+
+  function cleanup() {
+    cancelAnimationFrame(raf); clearTimeout(maxTimer);
+    stream && stream.getTracks().forEach((t) => t.stop());
+    actx && actx.close().catch(() => {});
+    stream = null; actx = null; $("level").style.width = "0"; setMic(false);
+  }
+  function stopMic() {
+    try { recognizer && recognizer.stop(); } catch {}
+    if (rec && rec.state !== "inactive") rec.stop();
+  }
+  $("mic").onclick = () => (rec && rec.state === "recording" ? stopMic() : startMic());
+
+  // ---------- 2. ledger ----------
+  function sampleData() {
+    let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const out = []; const today = todayISO();
+    const parties = ["Ramesh", "Suresh", "Mohan", "Geeta", "Anil"];
+    for (let d = 89; d >= 0; d--) {
+      const date = addDays(today, -d);
+      const n = 2 + Math.floor(rnd() * 3);
+      for (let k = 0; k < n; k++) {
+        const amount = Math.round((200 + rnd() * 1400) / 10) * 10;
+        out.push({ intent: "sale", amount, date, payment_mode: rnd() < 0.35 ? "upi" : "cash" });
+      }
+      if (d % 6 === 0) out.push({ intent: "expense", amount: 300 + Math.round(rnd() * 500), date });
+      if (d % 9 === 0) out.push({ intent: "purchase", amount: 3000 + Math.round(rnd() * 3000), date });
+      if (d % 11 === 0) out.push({ intent: "credit_given", amount: 400 + Math.round(rnd() * 900), party: parties[Math.floor(rnd() * parties.length)], date });
+    }
+    // two old, unpaid credits so the "overdue" insight is visible
+    out.push({ intent: "credit_given", amount: 1800, party: "Mohan", date: addDays(today, -62) });
+    out.push({ intent: "credit_given", amount: 950, party: "Geeta", date: addDays(today, -41) });
+    out.push({ intent: "payment_received", amount: 600, party: "Ramesh", date: addDays(today, -3) });
+    return out.map((t, i) => ({ id: i + 1, ...t }));
+  }
+  $("sample").onclick = () => { ledger = sampleData(); persist(); renderAll(); };
+  $("clear").onclick = () => { ledger = []; ctx = emptyContext(); persist(); renderAll(); };
+
+  // ---------- 3 + 4. render ----------
+  function renderAll() {
+    $("count").textContent = ledger.length + " entries";
+    const recent = [...ledger].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id).slice(0, 40);
+    $("rows").innerHTML = recent.length
+      ? recent.map((t) => `<tr><td>${esc(t.date)}</td><td>${esc(t.intent.replace("_", " "))}</td><td>${esc(t.party || "")}</td><td class="r">${t.amount != null ? esc(t.amount.toLocaleString("en-IN")) : "—"}</td></tr>`).join("")
+      : `<tr><td colspan="4" class="muted">No entries yet. Save one from step 1 or load the sample data.</td></tr>`;
+
+    const stats = computeStats(ledger);
+    const ins = ruleInsights(stats, $("ilang").value);
+    $("insights").innerHTML = ins.length
+      ? ins.map((i) => `<li class="${i.severity}"><b>${esc(i.title)}</b>${esc(i.detail)}${i.action ? `<div class="act">→ ${esc(i.action)}</div>` : ""}</li>`).join("")
+      : `<li class="info">Add some entries to see insights.</li>`;
+
+    const profile = deriveProfile(ledger, { hasUdyam: $("udyam").checked, hasBankAccount: $("bank").checked });
+    const r = assessReadiness(profile);
+    const list = (a) => (a.length ? `<ul class="plain">${a.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : `<div class="muted">—</div>`);
+    $("readiness").innerHTML =
+      `<div class="row"><div class="score">${r.score}</div><div><span class="tag">${esc(r.band)}</span><div class="muted">out of 100</div></div></div>` +
+      `<div class="bar" role="img" aria-label="Score ${r.score} of 100"><i style="width:${r.score}%"></i></div>` +
+      `<b>Strengths</b>${list(r.strengths)}<b>To improve</b>${list(r.gaps)}<b>Next steps</b>${list(r.nextSteps)}` +
+      `<div class="muted">${profile.monthsOfRecords} month(s) of records · avg turnover ${inrFmt(profile.avgMonthlyTurnover)}/mo · ${Math.round(profile.digitalPaymentShare * 100)}% digital</div>`;
+  }
+  ["ilang", "udyam", "bank"].forEach((id) => $(id).addEventListener("change", renderAll));
+  renderAll();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29       # includes WebSocket support
+httpx>=0.27
+python-multipart>=0.0.9       # file uploads
+pytest>=8
+# system dependency: ffmpeg (audio conversion for Bhashini)

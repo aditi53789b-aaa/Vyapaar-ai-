@@ -87,6 +87,10 @@ def test_email_registration_verification_login_and_ledger(monkeypatch):
         assert client.get("/api/v1/auth/me", headers=headers).status_code == 401
         new_login = client.post("/api/v1/auth/login", json={"email": email, "password": "another-strong-password-55"})
         assert new_login.status_code == 200
+        new_headers = {"Authorization": f"Bearer {new_login.json()['access_token']}"}
+        deleted = client.request("DELETE", "/api/v1/auth/me", headers=new_headers, json={"password": "another-strong-password-55"})
+        assert deleted.status_code == 204
+        assert client.get("/api/v1/auth/me", headers=new_headers).status_code == 401
 
 
 def test_scheme_catalogue_uses_official_https_links():

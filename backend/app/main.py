@@ -276,6 +276,13 @@ app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_credentials
 
 @app.on_event("startup")
 def startup():
+    if APP_ENV == "production":
+        required = ["SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD", "PASSWORD_RESET_URL"]
+        missing = [key for key in required if not os.getenv(key)]
+        if missing:
+            raise RuntimeError("Missing production configuration: " + ", ".join(missing))
+        if "*" in CORS_ORIGINS:
+            raise RuntimeError("Wildcard CORS origins are forbidden in production.")
     # Local development bootstrap only. Production schema changes are applied with Alembic.
     if APP_ENV != "production":
         Base.metadata.create_all(bind=engine)

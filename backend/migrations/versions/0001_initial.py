@@ -19,6 +19,7 @@ def upgrade():
         sa.Column("terms_accepted_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("terms_version", sa.String(length=30), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.true()),
+        sa.Column("token_version", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("verification_hash", sa.String(length=64), nullable=True),
         sa.Column("verification_expires_at", sa.DateTime(timezone=True), nullable=True),

@@ -71,51 +71,61 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Invoices Generator Form
+  // Persist invoices through the authenticated API; never add demo rows.
   const invForm = document.getElementById("invForm");
   const invBody = document.getElementById("invBody");
-  let invCounter = 104;
+  const API = (window.BOLOKHATA_API_URL || ((["localhost","127.0.0.1"].includes(location.hostname) && location.port && location.port !== "8000") ? "http://127.0.0.1:8000" : location.origin)).replace(/\/$/, "");
+  const token = sessionStorage.getItem("bolokhaata_token") || localStorage.getItem("bolokhaata_token");
+
+  async function refreshInvoices() {
+    if (!invBody) return;
+    const response = await fetch(API + "/api/v1/invoices", { headers: { Authorization: "Bearer " + token } });
+    if (response.status === 401) { location.href = "auth.html?mode=login"; return; }
+    if (!response.ok) throw new Error("Could not load invoices.");
+    const payload = await response.json();
+    invBody.replaceChildren();
+    (payload.items || []).forEach(invoice => {
+      const tr = document.createElement("tr");
+      [invoice.invoice_number, invoice.customer_name, invoice.item_description || "—", Number(invoice.total).toLocaleString("en-IN") + " INR"].forEach(value => {
+        const td = document.createElement("td"); td.textContent = value; tr.appendChild(td);
+      });
+      const statusCell = document.createElement("td");
+      const badge = document.createElement("span");
+      badge.className = invoice.payment_status === "udhar" ? "badgeudhar" : "badgepaid";
+      badge.textContent = invoice.payment_status === "udhar" ? "Pending Udhar" : "Paid";
+      statusCell.appendChild(badge); tr.appendChild(statusCell); invBody.appendChild(tr);
+    });
+    if (!(payload.items || []).length) {
+      const tr = document.createElement("tr"), td = document.createElement("td");
+      td.colSpan = 5; td.textContent = "No invoices yet."; tr.appendChild(td); invBody.appendChild(tr);
+    }
+  }
 
   if (invForm && invBody) {
-    invForm.addEventListener("submit", function (event) {
+    if (!token) location.href = "auth.html?mode=login";
+    refreshInvoices().catch(error => { const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=5;td.textContent=error.message;tr.appendChild(td);invBody.replaceChildren(tr); });
+    invForm.addEventListener("submit", async function (event) {
       event.preventDefault();
-      const dict = translations[getCurrentLang()] || translations.en;
-
-      const cust = document.getElementById("invCust").value.trim();
-      const item = document.getElementById("invItem").value.trim();
-      const amt = Number(document.getElementById("invAmt").value);
-      const status = document.getElementById("invStatus").value;
-
-      if (!cust || !item || amt <= 0) return;
-
-      const tr = document.createElement("tr");
-
-      const tdId = document.createElement("td");
-      tdId.textContent = "#INV-" + invCounter++;
-
-      const tdCust = document.createElement("td");
-      tdCust.textContent = cust;
-
-      const tdItem = document.createElement("td");
-      tdItem.textContent = item;
-
-      const tdAmt = document.createElement("td");
-      tdAmt.textContent = amt + " INR";
-
-      const tdStat = document.createElement("td");
-      const span = document.createElement("span");
-      span.className = status === "udhar" ? "badgeudhar" : "badgepaid";
-      span.textContent = status === "udhar" ? dict.statusUdhar : dict.statusPaid;
-      tdStat.appendChild(span);
-
-      tr.appendChild(tdId);
-      tr.appendChild(tdCust);
-      tr.appendChild(tdItem);
-      tr.appendChild(tdAmt);
-      tr.appendChild(tdStat);
-      invBody.prepend(tr);
-
-      invForm.reset();
+      const button = invForm.querySelector('button[type="submit"]');
+      button.disabled = true;
+      try {
+        const response = await fetch(API + "/api/v1/invoices", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+          body: JSON.stringify({
+            customer_name: document.getElementById("invCust").value.trim(),
+            item_description: document.getElementById("invItem").value.trim(),
+            total: Number(document.getElementById("invAmt").value),
+            payment_status: document.getElementById("invStatus").value
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || "Invoice could not be saved.");
+        invForm.reset();
+        await refreshInvoices();
+      } catch (error) {
+        alert(error.message);
+      } finally { button.disabled = false; }
     });
   }
 

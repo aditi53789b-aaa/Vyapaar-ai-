@@ -409,7 +409,8 @@ def forgot_password(data: EmailIn, db: Session = Depends(db_session)):
         db.commit()
         reset_url = os.getenv("PASSWORD_RESET_URL", "").rstrip("/")
         if reset_url:
-            send_email(user.email, "Reset your BoloKhaata password", f"Use this single-use reset link within 20 minutes: {reset_url}?token={raw}")
+            separator = "&" if "?" in reset_url else "?"
+            send_email(user.email, "Reset your BoloKhaata password", f"Use this single-use reset link within 20 minutes: {reset_url}{separator}token={raw}")
     return {"message": "If the account exists, password reset instructions will be sent."}
 
 

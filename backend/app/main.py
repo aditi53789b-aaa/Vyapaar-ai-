@@ -189,6 +189,12 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def aware_utc(value: Optional[datetime]) -> Optional[datetime]:
+    if value is not None and value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
 def token_hash(value: str) -> str:
     return hmac.new(SECRET_KEY.encode(), value.encode(), hashlib.sha256).hexdigest()
 
@@ -354,7 +360,7 @@ def verify_email(data: VerifyIn, db: Session = Depends(db_session)):
         raise HTTPException(status_code=400, detail="Invalid or expired verification code")
     if user.email_verified_at:
         return {"message": "Email already verified"}
-    if user.verification_attempts >= 5 or not user.verification_expires_at or user.verification_expires_at < utcnow() or not hmac.compare_digest(user.verification_hash or "", token_hash(data.otp)):
+    if user.verification_attempts >= 5 or not user.verification_expires_at or aware_utc(user.verification_expires_at) < utcnow() or not hmac.compare_digest(user.verification_hash or "", token_hash(data.otp)):
         user.verification_attempts += 1
         db.commit()
         raise HTTPException(status_code=400, detail="Invalid or expired verification code")
@@ -370,7 +376,7 @@ def verify_email(data: VerifyIn, db: Session = Depends(db_session)):
 def resend_verification(data: EmailIn, db: Session = Depends(db_session)):
     user = db.query(User).filter(func.lower(User.email) == str(data.email).lower()).first()
     if user and not user.email_verified_at:
-        if user.verification_sent_at and (utcnow() - user.verification_sent_at).total_seconds() < 60:
+        if user.verification_sent_at and (utcnow() - aware_utc(user.verification_sent_at)).total_seconds() < 60:
             return {"message": "If the account requires verification, a new code can be requested after 60 seconds."}
         otp = f"{secrets.randbelow(1_000_000):06d}"
         user.verification_hash = token_hash(otp)
@@ -387,7 +393,7 @@ def login(data: LoginIn, db: Session = Depends(db_session)):
     user = db.query(User).filter(func.lower(User.email) == str(data.email).lower()).first()
     if not user:
         raise HTTPException(status_code=401, detail="Incorrect email or password")
-    if user.login_locked_until and user.login_locked_until > utcnow():
+    if user.login_locked_until and aware_utc(user.login_locked_until) > utcnow():
         raise HTTPException(status_code=429, detail="Too many failed attempts. Try again later.")
     if not pwd_context.verify(data.password, user.password_hash):
         user.login_failed_attempts += 1
@@ -418,7 +424,7 @@ def forgot_password(data: EmailIn, db: Session = Depends(db_session)):
     user = db.query(User).filter(func.lower(User.email) == str(data.email).lower()).first()
     if user and user.email_verified_at:
         raw = secrets.token_urlsafe(36)
-        if user.reset_sent_at and (utcnow() - user.reset_sent_at).total_seconds() < 60:
+        if user.reset_sent_at and (utcnow() - aware_utc(user.reset_sent_at)).total_seconds() < 60:
             return {"message": "If the account exists, password reset instructions will be sent."}
         user.reset_hash = token_hash(raw)
         user.reset_expires_at = utcnow() + timedelta(minutes=20)
@@ -434,7 +440,7 @@ def forgot_password(data: EmailIn, db: Session = Depends(db_session)):
 @app.post("/api/v1/auth/reset-password")
 def reset_password(data: ResetIn, db: Session = Depends(db_session)):
     user = db.query(User).filter(User.reset_hash == token_hash(data.token)).first()
-    if not user or not user.reset_expires_at or user.reset_expires_at < utcnow():
+    if not user or not user.reset_expires_at or aware_utc(user.reset_expires_at) < utcnow():
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
     user.password_hash = pwd_context.hash(data.new_password)
     user.reset_hash = None

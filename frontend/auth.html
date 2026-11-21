@@ -43,13 +43,6 @@
           </form>
           <p class="switch">Already have an account? <button type="button" data-show="login">Sign in</button></p>
         </div>
-        <div id="step-verify" class="auth-step" hidden>
-          <span class="eyebrow">ONE LAST STEP</span><div class="big-icon">✉</div><h2>Verify your email address</h2>
-          <p class="muted">We sent a verification code to <strong id="verifyEmail"></strong>. Enter it below to activate your account.</p>
-          <form id="verifyForm"><div class="field"><label for="otp">6-digit verification code</label><input id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required placeholder="000000"></div><p class="form-error" id="verifyError" role="alert"></p><button class="primary">Verify email</button></form>
-          <button class="text-button" id="resendCode" type="button">Resend verification code</button>
-          <button class="text-button" id="changeEmail" type="button">Change email address</button>
-        </div>
         <div id="step-login" class="auth-step" hidden>
           <span class="eyebrow">WELCOME BACK</span><h2>Sign in to your khata.</h2><p class="muted">Your business, right where you left it.</p>
           <form id="loginForm"><div class="field"><label for="loginEmail">Email address</label><input id="loginEmail" type="email" autocomplete="email" required placeholder="you@example.com"></div><div class="field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Your password"></div><div class="login-options"><label class="check"><input type="checkbox" id="remember"> <span>Remember me</span></label><button type="button" class="text-button" id="forgotPassword">Forgot password?</button></div><p class="form-error" id="loginError" role="alert"></p><button class="primary">Sign in <span>→</span></button></form><p class="switch">New to BoloKhaata? <button type="button" data-show="register">Create an account</button></p>

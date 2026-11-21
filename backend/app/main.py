@@ -30,12 +30,14 @@ if not SECRET_KEY:
 if APP_ENV == "production" and len(SECRET_KEY) < 32:
     raise RuntimeError("SECRET_KEY must contain at least 32 characters in production.")
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./vyapaar_ai.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./bolokhaata.sqlite3")
+if APP_ENV == "production" and not DATABASE_URL.startswith(("postgresql://", "postgresql+psycopg2://")):
+    raise RuntimeError("Production requires PostgreSQL. Set DATABASE_URL to a managed PostgreSQL connection.")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 OTP_MINUTES = int(os.getenv("EMAIL_OTP_EXPIRE_MINUTES", "10"))
 CORS_ORIGINS = [x.strip() for x in os.getenv("CORS_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000").split(",") if x.strip()]
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
 
 engine_kwargs = {"pool_pre_ping": True}
@@ -61,6 +63,9 @@ class User(Base):
     verification_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     verification_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     verification_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    verification_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    login_failed_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    login_locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     reset_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     reset_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     business: Mapped[Optional["Business"]] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
@@ -252,8 +257,9 @@ app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_credentials
 
 @app.on_event("startup")
 def startup():
-    # create_all bootstraps a fresh install. Use Alembic migrations for all subsequent schema changes.
-    Base.metadata.create_all(bind=engine)
+    # Local development bootstrap only. Production schema changes are applied with Alembic.
+    if APP_ENV != "production":
+        Base.metadata.create_all(bind=engine)
 
 
 @app.get("/health")
@@ -278,6 +284,7 @@ def register(data: RegisterIn, db: Session = Depends(db_session)):
     otp = f"{secrets.randbelow(1_000_000):06d}"
     user.verification_hash = token_hash(otp)
     user.verification_expires_at = utcnow() + timedelta(minutes=OTP_MINUTES)
+    user.verification_sent_at = utcnow()
     db.add(user)
     db.add(business)
     try:
@@ -312,10 +319,13 @@ def verify_email(data: VerifyIn, db: Session = Depends(db_session)):
 def resend_verification(data: EmailIn, db: Session = Depends(db_session)):
     user = db.query(User).filter(func.lower(User.email) == str(data.email).lower()).first()
     if user and not user.email_verified_at:
+        if user.verification_sent_at and (utcnow() - user.verification_sent_at).total_seconds() < 60:
+            return {"message": "If the account requires verification, a new code can be requested after 60 seconds."}
         otp = f"{secrets.randbelow(1_000_000):06d}"
         user.verification_hash = token_hash(otp)
         user.verification_expires_at = utcnow() + timedelta(minutes=OTP_MINUTES)
         user.verification_attempts = 0
+        user.verification_sent_at = utcnow()
         db.commit()
         send_email(user.email, "Your BoloKhaata verification code", f"Your new verification code is {otp}. It expires in {OTP_MINUTES} minutes.")
     return {"message": "If the account requires verification, a new code has been sent."}
@@ -324,8 +334,20 @@ def resend_verification(data: EmailIn, db: Session = Depends(db_session)):
 @app.post("/api/v1/auth/login")
 def login(data: LoginIn, db: Session = Depends(db_session)):
     user = db.query(User).filter(func.lower(User.email) == str(data.email).lower()).first()
-    if not user or not pwd_context.verify(data.password, user.password_hash):
+    if not user:
         raise HTTPException(status_code=401, detail="Incorrect email or password")
+    if user.login_locked_until and user.login_locked_until > utcnow():
+        raise HTTPException(status_code=429, detail="Too many failed attempts. Try again later.")
+    if not pwd_context.verify(data.password, user.password_hash):
+        user.login_failed_attempts += 1
+        if user.login_failed_attempts >= 5:
+            user.login_locked_until = utcnow() + timedelta(minutes=15)
+            user.login_failed_attempts = 0
+        db.commit()
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
+    user.login_failed_attempts = 0
+    user.login_locked_until = None
+    db.commit()
     if not user.email_verified_at:
         raise HTTPException(status_code=403, detail="Please verify your email before signing in")
     if not user.is_active:

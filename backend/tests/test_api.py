@@ -77,6 +77,17 @@ def test_email_registration_verification_login_and_ledger(monkeypatch):
         assert listed.status_code == 200
         assert any(x["invoice_number"] == invoice.json()["invoice_number"] for x in listed.json()["items"])
 
+        # Password reset revokes the previously issued bearer token.
+        monkeypatch.setenv("PASSWORD_RESET_URL", "https://example.test/auth.html?mode=reset")
+        forgot = client.post("/api/v1/auth/forgot-password", json={"email": email})
+        assert forgot.status_code == 200
+        reset_token = re.search(r"token=([A-Za-z0-9_-]+)", sent[-1][2]).group(1)
+        reset = client.post("/api/v1/auth/reset-password", json={"token": reset_token, "new_password": "another-strong-password-55"})
+        assert reset.status_code == 200
+        assert client.get("/api/v1/auth/me", headers=headers).status_code == 401
+        new_login = client.post("/api/v1/auth/login", json={"email": email, "password": "another-strong-password-55"})
+        assert new_login.status_code == 200
+
 
 def test_scheme_catalogue_uses_official_https_links():
     with TestClient(main.app) as client:

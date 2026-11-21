@@ -21,7 +21,7 @@ The Compose file exposes the API port. In production, place it behind a managed 
 ## Required infrastructure controls
 
 - Terminate TLS at a trusted reverse proxy and enable HSTS only after HTTPS is correctly configured.
-- Configure request-size limits and distributed rate limits for registration, login, OTP verification/resend, password reset and voice endpoints. The account-level login lock and OTP cooldown in the API are defence-in-depth, not a replacement for a shared Redis/API-gateway limiter across multiple workers.
+- Configure request-size limits and rate limits for registration, login, OTP verification/resend, password reset and voice endpoints. An example Nginx TLS and rate-limit configuration is in `deploy/nginx.conf`; replace the domain and certificate paths and validate it with `nginx -t` before enabling it. The account-level login lock and OTP cooldown in the API are defence-in-depth, not a replacement for a shared Redis/API-gateway limiter across multiple workers.
 - Configure trusted proxy IPs and hostnames; do not trust arbitrary forwarded headers.
 - Use a managed PostgreSQL service with encrypted storage, private networking, automated backups and tested point-in-time restore.
 - Store secrets in the deployment platform's secret manager. Never commit `.env`, database files, SMTP credentials, reset tokens or customer exports.

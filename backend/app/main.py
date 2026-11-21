@@ -319,8 +319,10 @@ def startup():
         missing = [key for key in required if not os.getenv(key)]
         if missing:
             raise RuntimeError("Missing production configuration: " + ", ".join(missing))
-        if "*" in CORS_ORIGINS:
-            raise RuntimeError("Wildcard CORS origins are forbidden in production.")
+        if "*" in CORS_ORIGINS or any(not origin.startswith("https://") for origin in CORS_ORIGINS):
+            raise RuntimeError("Production CORS origins must be explicit HTTPS origins.")
+        if not os.getenv("PASSWORD_RESET_URL", "").startswith("https://"):
+            raise RuntimeError("PASSWORD_RESET_URL must use HTTPS in production.")
     # Local development bootstrap only. Production schema changes are applied with Alembic.
     if APP_ENV != "production":
         Base.metadata.create_all(bind=engine)

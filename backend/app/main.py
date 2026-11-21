@@ -63,6 +63,8 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(120))
     password_hash: Mapped[str] = mapped_column(String(255))
     email_verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    terms_accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    terms_version: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     verification_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
@@ -336,7 +338,7 @@ def register(data: RegisterIn, db: Session = Depends(db_session)):
         raise HTTPException(status_code=409, detail="An account with this email already exists")
     if APP_ENV == "production" and not all(os.getenv(k) for k in ("SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD")):
         raise HTTPException(status_code=503, detail="Email verification is not configured")
-    user = User(email=email, full_name=data.full_name.strip(), password_hash=pwd_context.hash(data.password))
+    user = User(email=email, full_name=data.full_name.strip(), password_hash=pwd_context.hash(data.password), terms_accepted_at=utcnow(), terms_version=os.getenv("TERMS_VERSION", "2026-11-21"))
     business = Business(user=user, merchant_type=data.merchant_type or data.business_type, business_name=data.business_name, annual_income=data.annual_income, state=data.state, district=data.district, business_category=data.business_category, preferred_language=data.preferred_language)
     otp = f"{secrets.randbelow(1_000_000):06d}"
     user.verification_hash = token_hash(otp)

@@ -25,7 +25,7 @@ services:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-bolokhaata}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-bolokhaata}
       FRONTEND_DIR: /frontend
     ports:
-      - "${PORT:-8000}:8000"
+      - "127.0.0.1:${PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy

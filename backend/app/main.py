@@ -9,6 +9,7 @@ import secrets
 import smtplib
 import ssl
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from decimal import Decimal, InvalidOperation
 from email.message import EmailMessage
 from typing import Optional
@@ -484,9 +485,10 @@ def reset_password(data: ResetIn, db: Session = Depends(db_session)):
 @app.get("/api/v1/dashboard/summary")
 def dashboard_summary(user: User = Depends(current_user), db: Session = Depends(db_session)):
     business = require_business(user, db)
-    now = utcnow()
-    start_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    start_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    business_tz = ZoneInfo(os.getenv("BUSINESS_TIMEZONE", "Asia/Kolkata"))
+    now_local = datetime.now(business_tz)
+    start_day = now_local.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+    start_month = now_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
     def total(kind_filter, since=None):
         query = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(Transaction.business_id == business.id, Transaction.kind.in_(kind_filter))
         if since:

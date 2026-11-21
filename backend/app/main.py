@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
+from pathlib import Path
 import re
 import secrets
 import smtplib
@@ -12,8 +13,10 @@ from decimal import Decimal, InvalidOperation
 from email.message import EmailMessage
 from typing import Optional
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -68,6 +71,7 @@ class User(Base):
     login_locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     reset_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     reset_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    reset_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     business: Mapped[Optional["Business"]] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 
@@ -113,7 +117,20 @@ class Invoice(Base):
     invoice_number: Mapped[str] = mapped_column(String(40), index=True)
     customer_name: Mapped[str] = mapped_column(String(120))
     total: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    item_description: Mapped[str] = mapped_column(String(500), default="")
+    payment_status: Mapped[str] = mapped_column(String(12), default="paid")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class GovernmentScheme(Base):
+    __tablename__ = "government_schemes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200), unique=True)
+    description: Mapped[str] = mapped_column(Text, default="")
+    category: Mapped[str] = mapped_column(String(80), index=True)
+    department: Mapped[str] = mapped_column(String(200), default="Government of India")
+    official_portal_url: Mapped[str] = mapped_column(String(500))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
 class RegisterIn(BaseModel):
@@ -161,7 +178,9 @@ class VoiceIn(BaseModel):
 
 class InvoiceIn(BaseModel):
     customer_name: str = Field(min_length=1, max_length=120)
+    item_description: str = Field(default="", max_length=500)
     total: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+    payment_status: str = Field(default="paid", pattern=r"^(paid|udhar)$")
 
 
 def utcnow() -> datetime:
@@ -260,6 +279,14 @@ def startup():
     # Local development bootstrap only. Production schema changes are applied with Alembic.
     if APP_ENV != "production":
         Base.metadata.create_all(bind=engine)
+        with SessionLocal() as db:
+            if db.query(GovernmentScheme).count() == 0:
+                db.add_all([
+                    GovernmentScheme(name="PM SVANidhi", description="Official programme portal for street-vendor support. Review current guidelines and application requirements on the government portal.", category="Street Vendor Support", department="Ministry of Housing and Urban Affairs", official_portal_url="https://pmsvanidhi.mohua.gov.in/"),
+                    GovernmentScheme(name="Pradhan Mantri MUDRA Yojana (PMMY)", description="Official portal for information about the MUDRA programme. Product details and lending decisions are determined by participating lenders and current official guidelines.", category="Credit and Enterprise", department="Department of Financial Services, Ministry of Finance", official_portal_url="https://www.mudra.org.in/"),
+                    GovernmentScheme(name="PM Vishwakarma", description="Official programme portal for eligible traditional artisans and craftspeople. Review current trade lists and application requirements on the government portal.", category="Artisan Support", department="Ministry of MSME", official_portal_url="https://pmvishwakarma.gov.in/")
+                ])
+                db.commit()
 
 
 @app.get("/health")
@@ -367,8 +394,11 @@ def forgot_password(data: EmailIn, db: Session = Depends(db_session)):
     user = db.query(User).filter(func.lower(User.email) == str(data.email).lower()).first()
     if user and user.email_verified_at:
         raw = secrets.token_urlsafe(36)
+        if user.reset_sent_at and (utcnow() - user.reset_sent_at).total_seconds() < 60:
+            return {"message": "If the account exists, password reset instructions will be sent."}
         user.reset_hash = token_hash(raw)
         user.reset_expires_at = utcnow() + timedelta(minutes=20)
+        user.reset_sent_at = utcnow()
         db.commit()
         reset_url = os.getenv("PASSWORD_RESET_URL", "").rstrip("/")
         if reset_url:
@@ -453,35 +483,77 @@ def create_transaction(data: TransactionIn, user: User = Depends(current_user), 
 def create_invoice(data: InvoiceIn, user: User = Depends(current_user), db: Session = Depends(db_session)):
     business = require_business(user, db)
     number = f"BK-{business.id}-{secrets.token_hex(4).upper()}"
-    invoice = Invoice(business_id=business.id, invoice_number=number, customer_name=data.customer_name, total=data.total)
+    customer = db.query(Customer).filter(Customer.business_id == business.id, func.lower(Customer.name) == data.customer_name.lower()).first()
+    if not customer:
+        customer = Customer(business_id=business.id, name=data.customer_name)
+        db.add(customer)
+        db.flush()
+    invoice = Invoice(business_id=business.id, invoice_number=number, customer_name=data.customer_name, total=data.total, item_description=data.item_description, payment_status=data.payment_status)
     db.add(invoice)
+    kind = "CREDIT_GIVEN" if data.payment_status == "udhar" else "SALE"
+    db.add(Transaction(business_id=business.id, customer_id=customer.id, kind=kind, amount=data.total, notes=f"Invoice {number}: {data.item_description}"))
+    if data.payment_status == "udhar":
+        customer.balance = Decimal(customer.balance or 0) + data.total
     db.commit()
-    return {"id": invoice.id, "invoice_number": number, "customer_name": invoice.customer_name, "total": str(invoice.total), "created_at": invoice.created_at.isoformat()}
+    return {"id": invoice.id, "invoice_number": number, "customer_name": invoice.customer_name, "total": str(invoice.total), "item_description": invoice.item_description, "payment_status": invoice.payment_status, "created_at": invoice.created_at.isoformat()}
 
 
 @app.get("/api/v1/invoices")
 def list_invoices(user: User = Depends(current_user), db: Session = Depends(db_session)):
     business = require_business(user, db)
     rows = db.query(Invoice).filter(Invoice.business_id == business.id).order_by(Invoice.created_at.desc()).limit(100).all()
-    return {"items": [{"id": x.id, "invoice_number": x.invoice_number, "customer_name": x.customer_name, "total": str(x.total), "created_at": x.created_at.isoformat()} for x in rows]}
+    return {"items": [{"id": x.id, "invoice_number": x.invoice_number, "customer_name": x.customer_name, "total": str(x.total), "item_description": x.item_description, "payment_status": x.payment_status, "created_at": x.created_at.isoformat()} for x in rows]}
 
 
 @app.get("/api/v1/government-schemes")
-def schemes():
-    # No unverified/fabricated scheme records are returned. Connect the official-source sync catalogue before enabling discovery.
-    return {"items": [], "schemes": [], "categories": []}
+def schemes(query: Optional[str] = None, category: Optional[str] = None, state: Optional[str] = None, limit: int = 100, db: Session = Depends(db_session)):
+    q = db.query(GovernmentScheme).filter(GovernmentScheme.is_active.is_(True))
+    if query:
+        term = f"%{query.strip()}%"
+        q = q.filter(GovernmentScheme.name.ilike(term) | GovernmentScheme.description.ilike(term))
+    if category:
+        q = q.filter(GovernmentScheme.category == category)
+    rows = q.order_by(GovernmentScheme.name).limit(min(max(limit, 1), 100)).all()
+    items = [{"id": s.id, "name": s.name, "description": s.description, "category": s.category, "department": s.department, "official_portal_url": s.official_portal_url} for s in rows]
+    return {"items": items, "schemes": items, "categories": sorted({s.category for s in db.query(GovernmentScheme).filter(GovernmentScheme.is_active.is_(True)).all()})}
 
 
 @app.get("/api/v1/government-schemes/categories")
-def scheme_categories():
-    return []
+def scheme_categories(db: Session = Depends(db_session)):
+    return sorted({s.category for s in db.query(GovernmentScheme).filter(GovernmentScheme.is_active.is_(True)).all()})
 
 
 @app.get("/api/v1/government-schemes/sources")
-def scheme_sources():
-    return []
+def scheme_sources(db: Session = Depends(db_session)):
+    return [{"name": s.department, "url": s.official_portal_url} for s in db.query(GovernmentScheme).filter(GovernmentScheme.is_active.is_(True)).all()]
 
+
+@app.post("/api/v1/government-schemes/{scheme_id}/assess")
+def assess_scheme(scheme_id: int, user: User = Depends(current_user), db: Session = Depends(db_session)):
+    business = require_business(user, db)
+    scheme = db.get(GovernmentScheme, scheme_id)
+    if not scheme or not scheme.is_active:
+        raise HTTPException(status_code=404, detail="Scheme not found")
+    missing = []
+    if not business.business_category:
+        missing.append("Business category")
+    if not business.merchant_type:
+        missing.append("Business type")
+    if not business.state:
+        missing.append("State")
+    if not business.annual_income:
+        missing.append("Approximate annual turnover")
+    return {"scheme_id": scheme.id, "scheme_name": scheme.name, "assessment_status": "PROFILE_INCOMPLETE" if missing else "READY_FOR_MANUAL_REVIEW", "missing_profile_fields": missing, "official_portal_url": scheme.official_portal_url, "disclaimer": "This is a profile completeness check only, not a legal eligibility determination, government verification, application, loan approval or guarantee. Confirm all current criteria on the official portal."}
+
+
+FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 
 @app.get("/")
 def root():
-    return {"service": "BoloKhaata API", "version": app.version, "docs": "/docs" if APP_ENV != "production" else None}
+    index = FRONTEND_DIR / "index.html"
+    if index.is_file():
+        return FileResponse(index)
+    return {"service": "BoloKhaata API", "version": app.version}
+
+if FRONTEND_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")

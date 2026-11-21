@@ -62,6 +62,12 @@ def test_email_registration_verification_login_and_ledger(monkeypatch):
         summary = client.get("/api/v1/dashboard/summary", headers=headers)
         assert summary.status_code == 200
         assert summary.json()["total_outstanding_udhar"] == 500.0
+        customers = client.get("/api/v1/customers", headers=headers)
+        assert customers.status_code == 200
+        assert any(x["name"] == "Ramesh" for x in customers.json()["items"])
+        export = client.get("/api/v1/auth/me/export", headers=headers)
+        assert export.status_code == 200
+        assert export.json()["account"]["email"] == email
 
         invoice = client.post("/api/v1/invoices", headers=headers, json={
             "customer_name": "Sita", "item_description": "Rice 5 kg", "total": "250.00", "payment_status": "udhar"

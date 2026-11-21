@@ -67,6 +67,7 @@ class User(Base):
     terms_accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     terms_version: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    token_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     verification_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     verification_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -234,7 +235,7 @@ def send_email(to: str, subject: str, body: str) -> None:
 
 def issue_access_token(user: User) -> str:
     now = utcnow()
-    return jwt.encode({"sub": str(user.id), "iat": now, "exp": now + timedelta(minutes=ACCESS_TOKEN_MINUTES)}, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode({"sub": str(user.id), "ver": user.token_version, "iat": now, "exp": now + timedelta(minutes=ACCESS_TOKEN_MINUTES)}, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def db_session():
@@ -254,8 +255,8 @@ def current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer), db
     except (JWTError, KeyError, ValueError, TypeError):
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     user = db.get(User, user_id)
-    if not user or not user.is_active or not user.email_verified_at:
-        raise HTTPException(status_code=401, detail="Account unavailable or email not verified")
+    if not user or not user.is_active or not user.email_verified_at or payload.get("ver") != user.token_version:
+        raise HTTPException(status_code=401, detail="Account unavailable or session expired")
     return user
 
 
@@ -476,6 +477,7 @@ def reset_password(data: ResetIn, db: Session = Depends(db_session)):
     if not user or not user.reset_expires_at or aware_utc(user.reset_expires_at) < utcnow():
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
     user.password_hash = pwd_context.hash(data.new_password)
+    user.token_version += 1
     user.reset_hash = None
     user.reset_expires_at = None
     db.commit()

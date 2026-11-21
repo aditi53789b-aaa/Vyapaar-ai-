@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoloKhata - Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brandbox">
+        <a href="index.html" class="logo" data-i18n="brandName">BoloKhata</a>
+        <span class="tag" data-i18n="brandTag">Bas Bolo, Hisab Ho Gaya</span>
+      </div>
+
+      <nav class="sidenav">
+        <a href="dashboard.html" class="navitem active" data-i18n="navDash">Dashboard</a>
+        <a href="invoices.html" class="navitem" data-i18n="navInvoices">Invoices</a>
+        <a href="schemes.html" class="navitem" data-i18n="navSchemes">Schemes</a>
+        <a href="index.html" class="navitem" data-i18n="navHome">Landing Page</a>
+      </nav>
+
+      <div class="sidebottom">
+        <div class="profile">
+          <div class="avatar">AS</div>
+          <div>
+            <strong data-i18n="userName">Anirudh Sharma</strong>
+            <span class="role" data-i18n="userRole">Vendor</span>
+          </div>
+        </div>
+        <button id="langBtn" class="langbtn full" type="button">हिंदी</button>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="pagehead">
+        <div>
+          <h1 data-i18n="greeting">Namaste, Anirudh!</h1>
+          <p data-i18n="subGreeting">Aapka vyapaar ab aur bhi smart!</p>
+        </div>
+        <span class="pill" data-i18n="heroBadge">Smart Vyapaar, Secure Bhavishya</span>
+      </header>
+
+      <section class="grid4">
+        <div class="card stat">
+          <span class="lbl" data-i18n="statSales">Today's Sales</span>
+          <strong class="val" id="salesVal">2,850 INR</strong>
+          <span class="trend up">+12%</span>
+        </div>
+        <div class="card stat">
+          <span class="lbl" data-i18n="statUdhar">Pending Debt</span>
+          <strong class="val" id="udharVal">1,750 INR</strong>
+          <span class="trend down">-5%</span>
+        </div>
+        <div class="card stat">
+          <span class="lbl" data-i18n="statMonth">This Month</span>
+          <strong class="val">45,200 INR</strong>
+          <span class="trend up">+18%</span>
+        </div>
+        <div class="card stat">
+          <span class="lbl" data-i18n="statCust">Total Customers</span>
+          <strong class="val">48</strong>
+          <span class="trend up">+2 new</span>
+        </div>
+      </section>
+
+      <section class="grid3">
+        <div class="card recorder">
+          <div class="cardhead">
+            <h2 data-i18n="voiceTitle">Record Transaction by Voice</h2>
+          </div>
+          <p class="muted" data-i18n="voiceHint">Speak in Hindi or English to log sales or udhar.</p>
+          <div class="micbox">
+            <div id="status" class="status" data-i18n="statusReady">Ready to listen</div>
+            <button id="micBtn" class="micbtn" type="button" data-i18n="btnTapSpeak">Tap to Speak</button>
+            <p class="sample" data-i18n="sampleText">"Ramesh ne aaj 5 kilo aloo udhaar liya - 250 rupaye"</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardhead">
+            <h2 data-i18n="chartTitle">Your Business at a Glance</h2>
+            <span class="muted" data-i18n="chartRange">Last 7 Days</span>
+          </div>
+          <div class="legend">
+            <span class="dot green"></span><span data-i18n="legendSales">Sales</span>
+            <span class="dot pink"></span><span data-i18n="legendExp">Expenses</span>
+          </div>
+          <div class="bars">
+            <div class="barcol"><div class="barfill" style="height: 55%;"></div><span>Mon</span></div>
+            <div class="barcol"><div class="barfill" style="height: 45%;"></div><span>Tue</span></div>
+            <div class="barcol"><div class="barfill" style="height: 70%;"></div><span>Wed</span></div>
+            <div class="barcol"><div class="barfill" style="height: 60%;"></div><span>Thu</span></div>
+            <div class="barcol"><div class="barfill" style="height: 85%;"></div><span>Fri</span></div>
+            <div class="barcol"><div class="barfill" style="height: 75%;"></div><span>Sat</span></div>
+            <div class="barcol"><div class="barfill" style="height: 95%;"></div><span>Sun</span></div>
+          </div>
+        </div>
+
+        <div class="card copilot">
+          <div class="cardhead">
+            <h2 data-i18n="copilotTitle">BoloKhata AI Copilot</h2>
+          </div>
+          <p class="muted" data-i18n="copilotSub">Your Financial Assistant</p>
+          <div class="eligbox">
+            <strong class="eligtitle" data-i18n="copilotElig">Eligible for PM SVANidhi Loan</strong>
+            <p class="reqhead" data-i18n="reqTitle">Required Documents:</p>
+            <ul class="list">
+              <li data-i18n="req1">Valid Aadhaar Card</li>
+              <li data-i18n="req2">Business Proof</li>
+              <li data-i18n="req3">Last 6 Months Transaction History</li>
+            </ul>
+            <a href="schemes.html" class="textlink" data-i18n="btnDetailedReport">View Detailed Report</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid3">
+        <div class="card">
+          <div class="cardhead">
+            <h2 data-i18n="ledgerTitle">Customer Ledger</h2>
+            <a href="invoices.html" class="textlink" data-i18n="viewAll">View All</a>
+          </div>
+          <div id="ledgerList">
+            <div class="ledgerrow">
+              <div>
+                <strong>Ramesh</strong>
+                <span class="sub">Due in 3 days</span>
+              </div>
+              <span class="badgeudhar">750 INR</span>
+            </div>
+            <div class="ledgerrow">
+              <div>
+                <strong>Sita Devi</strong>
+                <span class="sub">Due in 5 days</span>
+              </div>
+              <span class="badgeudhar">420 INR</span>
+            </div>
+            <div class="ledgerrow">
+              <div>
+                <strong>Amit Kumar</strong>
+                <span class="sub">Settled</span>
+              </div>
+              <span class="badgepaid">0 INR</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardhead">
+            <h2 data-i18n="quickAddTitle">Quick Manual Entry</h2>
+          </div>
+          <form id="quickForm" class="form">
+            <input type="text" id="qCust" data-i18n-placeholder="phCust" placeholder="Customer Name" required>
+            <div class="split">
+              <input type="number" id="qAmt" data-i18n-placeholder="phAmt" placeholder="Amount (INR)" min="1" required>
+              <select id="qType">
+                <option value="sale" data-i18n="optSale">Cash Sale</option>
+                <option value="udhar" data-i18n="optUdhar">Udhar (Credit)</option>
+              </select>
+            </div>
+            <button type="submit" class="btn full" data-i18n="btnAddEntry">Add to Khata</button>
+          </form>
+        </div>
+
+        <div class="card banner">
+          <h2 data-i18n="promoBannerTitle">Apply for Micro-Credit with Confidence</h2>
+          <p data-i18n="promoBannerDesc">Generate your verified Financial Capability Statement from your daily khata records.</p>
+          <a href="schemes.html" class="btn light" data-i18n="btnGetReport">Explore Schemes</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="lang.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

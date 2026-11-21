@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoloKhata - Government Schemes</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brandbox">
+        <a href="index.html" class="logo" data-i18n="brandName">BoloKhata</a>
+        <span class="tag" data-i18n="brandTag">Bas Bolo, Hisab Ho Gaya</span>
+      </div>
+
+      <nav class="sidenav">
+        <a href="dashboard.html" class="navitem" data-i18n="navDash">Dashboard</a>
+        <a href="invoices.html" class="navitem" data-i18n="navInvoices">Invoices</a>
+        <a href="schemes.html" class="navitem active" data-i18n="navSchemes">Schemes</a>
+        <a href="index.html" class="navitem" data-i18n="navHome">Landing Page</a>
+      </nav>
+
+      <div class="sidebottom">
+        <div class="profile">
+          <div class="avatar">GS</div>
+          <div>
+            <strong data-i18n="userName">Gauri Sharma</strong>
+            <span class="role" data-i18n="userRole">Vendor</span>
+          </div>
+        </div>
+        <button id="langBtn" class="langbtn full" type="button">हिंदी</button>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="pagehead">
+        <div>
+          <h1 data-i18n="schemesTitle">Eligible Support Schemes</h1>
+          <p data-i18n="schemesSub">Government loans and micro-credit matched to your BoloKhata sales history.</p>
+        </div>
+      </header>
+
+      <section class="grid3">
+        <article class="card schemecard">
+          <div>
+            <span class="pill" data-i18n="tagMicro">Micro Loan</span>
+            <h2 data-i18n="s1Title">PM SVANidhi Scheme</h2>
+            <p class="muted" data-i18n="s1Desc">Collateral-free working capital loans up to 50,000 INR for street vendors and local shopkeepers with regular digital or khata records.</p>
+          </div>
+          <div class="schemefoot">
+            <div class="eligline">
+              <strong data-i18n="eligLabel">Status:</strong>
+              <span class="badgepaid" data-i18n="eligMatch">High Match (92%)</span>
+            </div>
+            <button class="btn full applybtn" type="button" data-i18n="btnApply">Check Readiness</button>
+          </div>
+        </article>
+
+        <article class="card schemecard">
+          <div>
+            <span class="pill" data-i18n="tagGrowth">Business Growth</span>
+            <h2 data-i18n="s2Title">Pradhan Mantri Mudra Yojana</h2>
+            <p class="muted" data-i18n="s2Desc">Shishu and Kishore loans from 50,000 INR to 5,00,000 INR to expand shop inventory, equipment, and working capital.</p>
+          </div>
+          <div class="schemefoot">
+            <div class="eligline">
+              <strong data-i18n="eligLabel">Status:</strong>
+              <span class="badgepaid" data-i18n="eligGood">Eligible</span>
+            </div>
+            <button class="btn full applybtn" type="button" data-i18n="btnApply">Check Readiness</button>
+          </div>
+        </article>
+
+        <article class="card schemecard">
+          <div>
+            <span class="pill" data-i18n="tagArtisan">Artisan Credit</span>
+            <h2 data-i18n="s3Title">PM Vishwakarma Yojana</h2>
+            <p class="muted" data-i18n="s3Desc">Toolkit grants up to 15,000 INR and subsidized credit support at 5% interest for traditional craftspeople and artisans.</p>
+          </div>
+          <div class="schemefoot">
+            <div class="eligline">
+              <strong data-i18n="eligLabel">Status:</strong>
+              <span class="badgepaid" data-i18n="eligGood">Eligible</span>
+            </div>
+            <button class="btn full applybtn" type="button" data-i18n="btnApply">Check Readiness</button>
+          </div>
+        </article>
+      </section>
+
+      <div id="schemeNotice" class="notice"></div>
+    </main>
+  </div>
+
+  <script src="lang.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BoloKhata - Invoices</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brandbox">
+        <a href="index.html" class="logo" data-i18n="brandName">BoloKhata</a>
+        <span class="tag" data-i18n="brandTag">Bas Bolo, Hisab Ho Gaya</span>
+      </div>
+
+      <nav class="sidenav">
+        <a href="dashboard.html" class="navitem" data-i18n="navDash">Dashboard</a>
+        <a href="invoices.html" class="navitem active" data-i18n="navInvoices">Invoices</a>
+        <a href="schemes.html" class="navitem" data-i18n="navSchemes">Schemes</a>
+        <a href="index.html" class="navitem" data-i18n="navHome">Landing Page</a>
+      </nav>
+
+      <div class="sidebottom">
+        <div class="profile">
+          <div class="avatar">AS</div>
+          <div>
+            <strong data-i18n="userName">Anirudh Sharma</strong>
+            <span class="role" data-i18n="userRole">Vendor</span>
+          </div>
+        </div>
+        <button id="langBtn" class="langbtn full" type="button">हिंदी</button>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="pagehead">
+        <div>
+          <h1 data-i18n="invTitle">Customer Invoices</h1>
+          <p data-i18n="invSub">Create new bills and track paid or pending customer payments.</p>
+        </div>
+      </header>
+
+      <section class="grid2">
+        <div class="card">
+          <div class="cardhead">
+            <h2 data-i18n="createInvTitle">Create New Invoice</h2>
+          </div>
+          <form id="invForm" class="form">
+            <label data-i18n="colCustomer">Customer Name</label>
+            <input type="text" id="invCust" data-i18n-placeholder="phCust" placeholder="Customer Name" required>
+
+            <label data-i18n="colItem">Items Description</label>
+            <input type="text" id="invItem" data-i18n-placeholder="phItem" placeholder="e.g., 10 kg Rice, 2 L Oil" required>
+
+            <div class="split">
+              <div>
+                <label data-i18n="colAmount">Total Amount (INR)</label>
+                <input type="number" id="invAmt" data-i18n-placeholder="phAmt" placeholder="Amount (INR)" min="1" required>
+              </div>
+              <div>
+                <label data-i18n="colStatus">Payment Status</label>
+                <select id="invStatus">
+                  <option value="paid" data-i18n="statusPaid">Paid</option>
+                  <option value="udhar" data-i18n="statusUdhar">Pending Udhar</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="btn" data-i18n="btnGenInv">Generate Invoice</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="cardhead">
+            <h2 data-i18n="invHistoryTitle">Recent Invoices</h2>
+          </div>
+          <div class="tablewrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th data-i18n="colInvId">Invoice ID</th>
+                  <th data-i18n="colCustomer">Customer</th>
+                  <th data-i18n="colItem">Items</th>
+                  <th data-i18n="colAmount">Amount</th>
+                  <th data-i18n="colStatus">Status</th>
+                </tr>
+              </thead>
+              <tbody id="invBody">
+                <tr>
+                  <td>#INV-101</td>
+                  <td>Ramesh</td>
+                  <td>5 kg Aloo, 2 kg Onions</td>
+                  <td>250 INR</td>
+                  <td><span class="badgeudhar" data-i18n="statusUdhar">Pending Udhar</span></td>
+                </tr>
+                <tr>
+                  <td>#INV-102</td>
+                  <td>Sita Devi</td>
+                  <td>10 kg Wheat Flour</td>
+                  <td>420 INR</td>
+                  <td><span class="badgeudhar" data-i18n="statusUdhar">Pending Udhar</span></td>
+                </tr>
+                <tr>
+                  <td>#INV-103</td>
+                  <td>Amit Kumar</td>
+                  <td>5 L Mustard Oil</td>
+                  <td>680 INR</td>
+                  <td><span class="badgepaid" data-i18n="statusPaid">Paid</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="lang.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -13,7 +13,7 @@ def test_health_and_protected_routes():
         assert client.post("/api/v1/voice/parse", json={"transcript": "Ramesh ko 500 rupaye udhar"}).status_code == 401
 
 
-def test_email_registration_verification_login_and_ledger(monkeypatch):
+def test_password_registration_login_and_ledger(monkeypatch):
     sent = []
     monkeypatch.setattr(main, "send_email", lambda to, subject, body: sent.append((to, subject, body)))
     email = f"merchant-{uuid.uuid4().hex[:12]}@example.com"
@@ -30,14 +30,9 @@ def test_email_registration_verification_login_and_ledger(monkeypatch):
             "preferred_language": "hi",
             "accepted_terms": True
         })
-        assert response.status_code == 202, response.text
-        otp = re.search(r"\b(\d{6})\b", sent[-1][2]).group(1)
-
-        blocked = client.post("/api/v1/auth/login", json={"email": email, "password": "correct-horse-battery-42"})
-        assert blocked.status_code == 403
-
-        verified = client.post("/api/v1/auth/verify-email", json={"email": email, "otp": otp})
-        assert verified.status_code == 200
+        assert response.status_code == 201, response.text
+        assert response.json()["email"] == email
+        assert sent == []
 
         login = client.post("/api/v1/auth/login", json={"email": email, "password": "correct-horse-battery-42"})
         assert login.status_code == 200, login.text

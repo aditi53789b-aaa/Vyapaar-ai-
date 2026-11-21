@@ -40,7 +40,6 @@ if APP_ENV == "production" and not DATABASE_URL.startswith(("postgresql://", "po
     raise RuntimeError("Production requires PostgreSQL. Set DATABASE_URL to a managed PostgreSQL connection.")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
-OTP_MINUTES = int(os.getenv("EMAIL_OTP_EXPIRE_MINUTES", "10"))
 CORS_ORIGINS = [x.strip() for x in os.getenv("CORS_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000").split(",") if x.strip()]
 ALLOWED_HOSTS = [x.strip() for x in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",") if x.strip()]
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
@@ -261,7 +260,7 @@ def current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer), db
     except (JWTError, KeyError, ValueError, TypeError):
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     user = db.get(User, user_id)
-    if not user or not user.is_active or not user.email_verified_at or payload.get("ver") != user.token_version:
+    if not user or not user.is_active or payload.get("ver") != user.token_version:
         raise HTTPException(status_code=401, detail="Account unavailable or session expired")
     return user
 
@@ -346,19 +345,13 @@ def health():
         raise HTTPException(status_code=503, detail="Database unavailable")
 
 
-@app.post("/api/v1/auth/register", status_code=202)
+@app.post("/api/v1/auth/register", status_code=201)
 def register(data: RegisterIn, db: Session = Depends(db_session)):
     email = str(data.email).lower().strip()
     if db.query(User).filter(func.lower(User.email) == email).first():
         raise HTTPException(status_code=409, detail="An account with this email already exists")
-    if APP_ENV == "production" and not all(os.getenv(k) for k in ("SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD")):
-        raise HTTPException(status_code=503, detail="Email verification is not configured")
-    user = User(email=email, full_name=data.full_name.strip(), password_hash=pwd_context.hash(data.password), terms_accepted_at=utcnow(), terms_version=os.getenv("TERMS_VERSION", "2026-11-21"))
+    user = User(email=email, full_name=data.full_name.strip(), password_hash=pwd_context.hash(data.password), email_verified_at=utcnow(), terms_accepted_at=utcnow(), terms_version=os.getenv("TERMS_VERSION", "2026-11-21"))
     business = Business(user=user, merchant_type=data.merchant_type or data.business_type, business_name=data.business_name, annual_income=data.annual_income, state=data.state, district=data.district, business_category=data.business_category, preferred_language=data.preferred_language)
-    otp = f"{secrets.randbelow(1_000_000):06d}"
-    user.verification_hash = token_hash(otp)
-    user.verification_expires_at = utcnow() + timedelta(minutes=OTP_MINUTES)
-    user.verification_sent_at = utcnow()
     db.add(user)
     db.add(business)
     try:
@@ -366,43 +359,7 @@ def register(data: RegisterIn, db: Session = Depends(db_session)):
     except Exception:
         db.rollback()
         raise HTTPException(status_code=409, detail="Unable to create account. Check whether this email is already registered.")
-    send_email(email, "Verify your BoloKhaata account", f"Your BoloKhaata verification code is {otp}. It expires in {OTP_MINUTES} minutes. Do not share this code.")
-    return {"message": "Account created. Check your email for the verification code.", "email": email, "expires_in_seconds": OTP_MINUTES * 60}
-
-
-@app.post("/api/v1/auth/verify-email")
-def verify_email(data: VerifyIn, db: Session = Depends(db_session)):
-    user = db.query(User).filter(func.lower(User.email) == str(data.email).lower()).first()
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid or expired verification code")
-    if user.email_verified_at:
-        return {"message": "Email already verified"}
-    if user.verification_attempts >= 5 or not user.verification_expires_at or aware_utc(user.verification_expires_at) < utcnow() or not hmac.compare_digest(user.verification_hash or "", token_hash(data.otp)):
-        user.verification_attempts += 1
-        db.commit()
-        raise HTTPException(status_code=400, detail="Invalid or expired verification code")
-    user.email_verified_at = utcnow()
-    user.verification_hash = None
-    user.verification_expires_at = None
-    user.verification_attempts = 0
-    db.commit()
-    return {"message": "Email verified successfully. You can now sign in."}
-
-
-@app.post("/api/v1/auth/resend-verification")
-def resend_verification(data: EmailIn, db: Session = Depends(db_session)):
-    user = db.query(User).filter(func.lower(User.email) == str(data.email).lower()).first()
-    if user and not user.email_verified_at:
-        if user.verification_sent_at and (utcnow() - aware_utc(user.verification_sent_at)).total_seconds() < 60:
-            return {"message": "If the account requires verification, a new code can be requested after 60 seconds."}
-        otp = f"{secrets.randbelow(1_000_000):06d}"
-        user.verification_hash = token_hash(otp)
-        user.verification_expires_at = utcnow() + timedelta(minutes=OTP_MINUTES)
-        user.verification_attempts = 0
-        user.verification_sent_at = utcnow()
-        db.commit()
-        send_email(user.email, "Your BoloKhaata verification code", f"Your new verification code is {otp}. It expires in {OTP_MINUTES} minutes.")
-    return {"message": "If the account requires verification, a new code has been sent."}
+    return {"message": "Account created successfully. You can now sign in.", "email": email}
 
 
 @app.post("/api/v1/auth/login")
@@ -422,8 +379,6 @@ def login(data: LoginIn, db: Session = Depends(db_session)):
     user.login_failed_attempts = 0
     user.login_locked_until = None
     db.commit()
-    if not user.email_verified_at:
-        raise HTTPException(status_code=403, detail="Please verify your email before signing in")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="This account is disabled")
     business = db.query(Business).filter(Business.user_id == user.id).first()
@@ -464,7 +419,7 @@ def delete_account(data: DeleteAccountIn, user: User = Depends(current_user), db
 @app.post("/api/v1/auth/forgot-password")
 def forgot_password(data: EmailIn, db: Session = Depends(db_session)):
     user = db.query(User).filter(func.lower(User.email) == str(data.email).lower()).first()
-    if user and user.email_verified_at:
+    if user:
         raw = secrets.token_urlsafe(36)
         if user.reset_sent_at and (utcnow() - aware_utc(user.reset_sent_at)).total_seconds() < 60:
             return {"message": "If the account exists, password reset instructions will be sent."}

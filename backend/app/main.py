@@ -553,7 +553,7 @@ def assess_scheme(scheme_id: int, user: User = Depends(current_user), db: Sessio
     return {"scheme_id": scheme.id, "scheme_name": scheme.name, "assessment_status": "PROFILE_INCOMPLETE" if missing else "READY_FOR_MANUAL_REVIEW", "missing_profile_fields": missing, "official_portal_url": scheme.official_portal_url, "disclaimer": "This is a profile completeness check only, not a legal eligibility determination, government verification, application, loan approval or guarantee. Confirm all current criteria on the official portal."}
 
 
-FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
+FRONTEND_DIR = Path(os.getenv("FRONTEND_DIR", str(Path(__file__).resolve().parents[2] / "frontend")))
 
 @app.get("/")
 def root():

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#183c32">
+  <title>Account access · BoloKhaata</title>
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+  <main class="auth-layout">
+    <section class="brand-panel">
+      <a class="wordmark" href="index.html"><span class="mark">B</span> BoloKhaata</a>
+      <div class="brand-copy">
+        <span class="eyebrow">YOUR BUSINESS. YOUR KHATA. YOUR GROWTH.</span>
+        <h1>Good business starts with a clearer hisaab.</h1>
+        <p>Speak your business, keep every transaction organised, and discover opportunities to grow.</p>
+        <div class="trust-points"><span>✓ Your records stay yours</span><span>✓ Made for Indian businesses</span><span>✓ Hindi, English & Hinglish friendly</span></div>
+      </div>
+      <p class="brand-foot">Simple tools for the people who keep India moving.</p>
+    </section>
+    <section class="form-panel">
+      <div class="form-wrap">
+        <a class="mobile-wordmark" href="index.html">◈ BoloKhaata</a>
+        <div id="step-register" class="auth-step">
+          <span class="eyebrow">CREATE YOUR FREE ACCOUNT</span><h2>Your Business, Your Khata, Your Growth.</h2>
+          <p class="muted">Start with a few details. You can complete the rest later.</p>
+          <form id="registerForm">
+            <div class="field"><label for="fullName">Full name</label><input id="fullName" name="full_name" autocomplete="name" required placeholder="e.g. Ramesh Kumar"></div>
+            <div class="field"><label for="email">Email address</label><input id="email" name="email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
+            <div class="field"><label for="password">Create password</label><input id="password" name="password" type="password" minlength="10" autocomplete="new-password" required placeholder="At least 10 characters"></div>
+            <div class="field"><label for="confirmPassword">Confirm password</label><input id="confirmPassword" type="password" minlength="10" autocomplete="new-password" required placeholder="Enter password again"></div>
+            <div class="field"><label for="businessType">What best describes your business?</label><select id="businessType" name="merchant_type" required><option value="">Choose business type</option><option>Street Vendor</option><option>Small Shopkeeper / Kirana Store</option><option>Grocery Store</option><option>Fruits and Vegetable Seller</option><option>Food Stall / Food Vendor</option><option>Small Retail Business</option><option>Artisan / Craftsperson</option><option>Tailor / Weaver</option><option>Farmer / Agricultural Business</option><option>Service Provider</option><option>Self-employed Individual</option><option>Micro / Small Enterprise</option><option>Other</option></select></div>
+            <div class="field" id="otherTypeWrap" hidden><label for="otherType">Tell us your business type</label><input id="otherType" name="other_business_type"></div>
+            <div class="field"><label for="shopName">Business / shop name <span class="optional">Optional</span></label><input id="shopName" name="business_name" placeholder="e.g. Sharma General Store"></div>
+            <div class="field"><label for="income">Approx. annual business turnover <span class="optional">Optional</span></label><select id="income" name="annual_income"><option value="">Prefer to add later</option><option>Below ₹1 lakh</option><option>₹1–2.5 lakh</option><option>₹2.5–5 lakh</option><option>₹5–10 lakh</option><option>₹10–25 lakh</option><option>Above ₹25 lakh</option><option>Prefer not to say</option></select><small>Approximate business sales/turnover, not your personal take-home income.</small></div>
+            <div class="field"><label for="state">State</label><select id="state" name="state" required><option value="">Select state / UT</option></select></div>
+            <div class="field"><label for="district">District <span class="optional">Optional</span></label><input id="district" name="district" placeholder="Your district"></div>
+            <div class="field"><label for="category">Business category</label><select id="category" name="business_category" required><option value="">Choose category</option><option value="retail">Retail & shopkeeping</option><option value="food">Food & grocery</option><option value="street_vendor">Street vending</option><option value="artisan">Artisan & crafts</option><option value="agriculture">Agriculture</option><option value="services">Services</option><option value="manufacturing">Micro manufacturing</option><option value="other">Other</option></select></div>
+            <div class="field"><label for="language">Preferred language</label><select id="language" name="preferred_language" required><option value="hi">हिन्दी</option><option value="en">English</option><option value="hinglish">Hinglish</option><option value="bn">বাংলা</option><option value="mr">मराठी</option><option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="gu">ગુજરાતી</option><option value="pa">ਪੰਜਾਬੀ</option><option value="kn">ಕನ್ನಡ</option><option value="ml">മലയാളം</option><option value="or">ଓଡ଼ିଆ</option></select></div>
+            <label class="check"><input id="terms" name="accepted_terms" value="true" type="checkbox" required><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
+            <p class="form-error" id="registerError" role="alert"></p>
+            <button class="primary" type="submit" id="registerButton">Create my account <span>→</span></button>
+          </form>
+          <p class="switch">Already have an account? <button type="button" data-show="login">Sign in</button></p>
+        </div>
+        <div id="step-login" class="auth-step" hidden>
+          <span class="eyebrow">WELCOME BACK</span><h2>Sign in to your khata.</h2><p class="muted">Your business, right where you left it.</p>
+          <form id="loginForm"><div class="field"><label for="loginEmail">Email address</label><input id="loginEmail" type="email" autocomplete="email" required placeholder="you@example.com"></div><div class="field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Your password"></div><div class="login-options"><label class="check"><input type="checkbox" id="remember"> <span>Remember me</span></label><button type="button" class="text-button" id="forgotPassword">Forgot password?</button></div><p class="form-error" id="loginError" role="alert"></p><button class="primary">Sign in <span>→</span></button></form><p class="switch">New to BoloKhaata? <button type="button" data-show="register">Create an account</button></p>
+        </div>
+        <div id="step-reset" class="auth-step" hidden>
+          <span class="eyebrow">ACCOUNT RECOVERY</span>
+          <h2 id="resetHeading">Reset your password</h2>
+          <p class="muted" id="resetDescription">We'll send a secure reset link to your registered email.</p>
+          <form id="resetForm">
+            <div class="field" id="resetEmailWrap"><label for="resetEmail">Email address</label><input id="resetEmail" type="email" autocomplete="email" required></div>
+            <div class="field" id="newPasswordWrap" hidden><label for="newPassword">New password</label><input id="newPassword" type="password" minlength="10" autocomplete="new-password"></div>
+            <p class="form-error" id="resetError" role="alert"></p>
+            <button class="primary" id="resetSubmit">Send reset link</button>
+          </form>
+          <button class="text-button" data-show="login">Back to sign in</button>
+        </div>
+        <p class="security-note">Your personal and business details are used to personalise your experience. Aadhaar, PAN and bank details are not required to create an account.</p>
+      </div>
+    </section>
+  </main>
+  <script src="auth.js"></script>
+</body></html>

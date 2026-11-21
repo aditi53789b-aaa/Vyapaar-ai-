@@ -22,3 +22,10 @@ Thumbs.db
 node_modules/
 __pycache__/
 .pytest_cache/
+
+# Runtime databases and merchant uploads must never be committed
+*.db
+*.sqlite
+*.sqlite3
+backend/storage/
+storage/

@@ -405,3 +405,10 @@ A suitable open-source license can be added to the repository.
 ---
 
 **Vyaapaar AI – Turning Every Voice into a Business Record.** 🇮🇳
+
+
+## Production backend and deployment
+
+The active FastAPI API, email authentication, merchant ledger, customer khata, invoice records, voice confirmation and account privacy endpoints are documented in [the backend README](backend/README.md). For PostgreSQL, Docker Compose, migrations, SMTP, environment configuration and release gates, see [the production deployment guide](docs/PRODUCTION_DEPLOYMENT.md).
+
+**Important:** The scheme checker is a profile-completeness aid, not an official eligibility decision. Voice entries require review and confirmation. Current invoice records are not GST-compliant tax invoices. Legal pages are drafts requiring operator/legal review. Do not deploy publicly until the release checklist in the deployment guide is complete.

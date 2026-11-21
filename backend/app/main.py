@@ -1,0 +1,465 @@
+from __future__ import annotations
+
+import hashlib
+import hmac
+import os
+import re
+import secrets
+import smtplib
+import ssl
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal, InvalidOperation
+from email.message import EmailMessage
+from typing import Optional
+
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, create_engine, func
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship, sessionmaker
+
+APP_ENV = os.getenv("APP_ENV", "development").lower()
+SECRET_KEY = os.getenv("SECRET_KEY", "")
+if not SECRET_KEY:
+    if APP_ENV == "production":
+        raise RuntimeError("SECRET_KEY is required in production. Generate a random 32+ byte secret.")
+    SECRET_KEY = secrets.token_urlsafe(48)
+if APP_ENV == "production" and len(SECRET_KEY) < 32:
+    raise RuntimeError("SECRET_KEY must contain at least 32 characters in production.")
+
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./vyapaar_ai.db")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+OTP_MINUTES = int(os.getenv("EMAIL_OTP_EXPIRE_MINUTES", "10"))
+CORS_ORIGINS = [x.strip() for x in os.getenv("CORS_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000").split(",") if x.strip()]
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+bearer = HTTPBearer(auto_error=False)
+
+engine_kwargs = {"pool_pre_ping": True}
+if DATABASE_URL.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30}
+engine = create_engine(DATABASE_URL, **engine_kwargs)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class User(Base):
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(254), unique=True, index=True)
+    full_name: Mapped[str] = mapped_column(String(120))
+    password_hash: Mapped[str] = mapped_column(String(255))
+    email_verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    verification_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    verification_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    verification_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    reset_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    reset_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    business: Mapped[Optional["Business"]] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
+
+
+class Business(Base):
+    __tablename__ = "businesses"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True)
+    business_name: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    merchant_type: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    business_category: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    annual_income: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    state: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    district: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    preferred_language: Mapped[str] = mapped_column(String(20), default="hi")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    user: Mapped[User] = relationship(back_populates="business")
+
+
+class Customer(Base):
+    __tablename__ = "customers"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    business_id: Mapped[int] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    balance: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"))
+
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    business_id: Mapped[int] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"), index=True)
+    customer_id: Mapped[Optional[int]] = mapped_column(ForeignKey("customers.id", ondelete="SET NULL"), nullable=True)
+    kind: Mapped[str] = mapped_column(String(24), index=True)
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+
+
+class Invoice(Base):
+    __tablename__ = "invoices"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    business_id: Mapped[int] = mapped_column(ForeignKey("businesses.id", ondelete="CASCADE"), index=True)
+    invoice_number: Mapped[str] = mapped_column(String(40), index=True)
+    customer_name: Mapped[str] = mapped_column(String(120))
+    total: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class RegisterIn(BaseModel):
+    full_name: str = Field(min_length=2, max_length=120)
+    email: EmailStr
+    password: str = Field(min_length=10, max_length=128)
+    merchant_type: Optional[str] = Field(default=None, max_length=80)
+    business_type: Optional[str] = Field(default=None, max_length=80)
+    business_name: Optional[str] = Field(default=None, max_length=160)
+    annual_income: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    business_category: Optional[str] = None
+    preferred_language: str = "hi"
+
+
+class LoginIn(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class EmailIn(BaseModel):
+    email: EmailStr
+
+
+class VerifyIn(EmailIn):
+    otp: str = Field(pattern=r"^\d{6}$")
+
+
+class ResetIn(BaseModel):
+    token: str = Field(min_length=32, max_length=256)
+    new_password: str = Field(min_length=10, max_length=128)
+
+
+class TransactionIn(BaseModel):
+    kind: str = Field(pattern=r"^(SALE|CREDIT_GIVEN|PAYMENT_RECEIVED|EXPENSE)$")
+    amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+    customer_name: Optional[str] = Field(default=None, max_length=120)
+    notes: Optional[str] = Field(default=None, max_length=500)
+
+
+class VoiceIn(BaseModel):
+    transcript: str = Field(min_length=2, max_length=1000)
+
+
+class InvoiceIn(BaseModel):
+    customer_name: str = Field(min_length=1, max_length=120)
+    total: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+
+
+def utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def token_hash(value: str) -> str:
+    return hmac.new(SECRET_KEY.encode(), value.encode(), hashlib.sha256).hexdigest()
+
+
+def send_email(to: str, subject: str, body: str) -> None:
+    host, user, password = os.getenv("SMTP_HOST"), os.getenv("SMTP_USER"), os.getenv("SMTP_PASSWORD")
+    if not all([host, user, password]):
+        if APP_ENV == "production":
+            raise HTTPException(status_code=503, detail="Email delivery is not configured. Please try again later.")
+        print(f"[DEVELOPMENT EMAIL to={to}] {subject}\n{body}")
+        return
+    msg = EmailMessage()
+    msg["Subject"], msg["From"], msg["To"] = subject, os.getenv("SMTP_FROM", user), to
+    msg.set_content(body)
+    port = int(os.getenv("SMTP_PORT", "587"))
+    try:
+        if port == 465:
+            with smtplib.SMTP_SSL(host, port, context=ssl.create_default_context(), timeout=15) as server:
+                server.login(user, password)
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(host, port, timeout=15) as server:
+                server.starttls(context=ssl.create_default_context())
+                server.login(user, password)
+                server.send_message(msg)
+    except (OSError, smtplib.SMTPException) as exc:
+        raise HTTPException(status_code=503, detail="Unable to send email right now. Please try again later.") from exc
+
+
+def issue_access_token(user: User) -> str:
+    now = utcnow()
+    return jwt.encode({"sub": str(user.id), "iat": now, "exp": now + timedelta(minutes=ACCESS_TOKEN_MINUTES)}, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def db_session():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer), db: Session = Depends(db_session)) -> User:
+    if not credentials:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = int(payload["sub"])
+    except (JWTError, KeyError, ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    user = db.get(User, user_id)
+    if not user or not user.is_active or not user.email_verified_at:
+        raise HTTPException(status_code=401, detail="Account unavailable or email not verified")
+    return user
+
+
+def require_business(user: User, db: Session) -> Business:
+    business = db.query(Business).filter(Business.user_id == user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business profile not found")
+    return business
+
+
+def parse_voice(text: str) -> dict:
+    normalized = text.strip()
+    amount_match = re.search(r"(?:₹|rs\.?|inr\s*)?\s*(\d+(?:\.\d{1,2})?)", normalized, re.I)
+    if not amount_match:
+        raise HTTPException(status_code=422, detail="Could not identify an amount. Please say the amount clearly.")
+    amount = Decimal(amount_match.group(1))
+    low = normalized.lower()
+    if any(x in low for x in ("udhar", "baaki", "credit")):
+        kind = "CREDIT_GIVEN"
+    elif any(x in low for x in ("kharch", "expense", "petrol", "diesel", "rent")):
+        kind = "EXPENSE"
+    elif any(x in low for x in ("jama", "payment mila", "received", "paid back", "wapas")):
+        kind = "PAYMENT_RECEIVED"
+    else:
+        kind = "SALE"
+    match = re.search(r"([A-Za-z\u0900-\u097F]{2,})\s+(?:ko|ne|from|to)", normalized, re.I)
+    customer = match.group(1).strip().title() if match else None
+    return {"raw_transcript": normalized, "amount": str(amount), "transaction_type": kind, "customer_name": customer, "status": "DRAFT_REQUIRES_CONFIRMATION"}
+
+
+app = FastAPI(title="BoloKhaata API", version="1.0.0", docs_url="/docs" if APP_ENV != "production" else None, redoc_url=None)
+app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_credentials=True, allow_methods=["GET", "POST", "PATCH", "DELETE"], allow_headers=["Authorization", "Content-Type"])
+
+
+@app.on_event("startup")
+def startup():
+    # create_all bootstraps a fresh install. Use Alembic migrations for all subsequent schema changes.
+    Base.metadata.create_all(bind=engine)
+
+
+@app.get("/health")
+def health():
+    try:
+        with engine.connect() as conn:
+            conn.exec_driver_sql("SELECT 1")
+        return {"status": "ok", "database": "connected", "environment": APP_ENV}
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+@app.post("/api/v1/auth/register", status_code=202)
+def register(data: RegisterIn, db: Session = Depends(db_session)):
+    email = str(data.email).lower().strip()
+    if db.query(User).filter(func.lower(User.email) == email).first():
+        raise HTTPException(status_code=409, detail="An account with this email already exists")
+    if APP_ENV == "production" and not all(os.getenv(k) for k in ("SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD")):
+        raise HTTPException(status_code=503, detail="Email verification is not configured")
+    user = User(email=email, full_name=data.full_name.strip(), password_hash=pwd_context.hash(data.password))
+    business = Business(user=user, merchant_type=data.merchant_type or data.business_type, business_name=data.business_name, annual_income=data.annual_income, state=data.state, district=data.district, business_category=data.business_category, preferred_language=data.preferred_language)
+    otp = f"{secrets.randbelow(1_000_000):06d}"
+    user.verification_hash = token_hash(otp)
+    user.verification_expires_at = utcnow() + timedelta(minutes=OTP_MINUTES)
+    db.add(user)
+    db.add(business)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Unable to create account. Check whether this email is already registered.")
+    send_email(email, "Verify your BoloKhaata account", f"Your BoloKhaata verification code is {otp}. It expires in {OTP_MINUTES} minutes. Do not share this code.")
+    return {"message": "Account created. Check your email for the verification code.", "email": email, "expires_in_seconds": OTP_MINUTES * 60}
+
+
+@app.post("/api/v1/auth/verify-email")
+def verify_email(data: VerifyIn, db: Session = Depends(db_session)):
+    user = db.query(User).filter(func.lower(User.email) == str(data.email).lower()).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code")
+    if user.email_verified_at:
+        return {"message": "Email already verified"}
+    if user.verification_attempts >= 5 or not user.verification_expires_at or user.verification_expires_at < utcnow() or not hmac.compare_digest(user.verification_hash or "", token_hash(data.otp)):
+        user.verification_attempts += 1
+        db.commit()
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code")
+    user.email_verified_at = utcnow()
+    user.verification_hash = None
+    user.verification_expires_at = None
+    user.verification_attempts = 0
+    db.commit()
+    return {"message": "Email verified successfully. You can now sign in."}
+
+
+@app.post("/api/v1/auth/resend-verification")
+def resend_verification(data: EmailIn, db: Session = Depends(db_session)):
+    user = db.query(User).filter(func.lower(User.email) == str(data.email).lower()).first()
+    if user and not user.email_verified_at:
+        otp = f"{secrets.randbelow(1_000_000):06d}"
+        user.verification_hash = token_hash(otp)
+        user.verification_expires_at = utcnow() + timedelta(minutes=OTP_MINUTES)
+        user.verification_attempts = 0
+        db.commit()
+        send_email(user.email, "Your BoloKhaata verification code", f"Your new verification code is {otp}. It expires in {OTP_MINUTES} minutes.")
+    return {"message": "If the account requires verification, a new code has been sent."}
+
+
+@app.post("/api/v1/auth/login")
+def login(data: LoginIn, db: Session = Depends(db_session)):
+    user = db.query(User).filter(func.lower(User.email) == str(data.email).lower()).first()
+    if not user or not pwd_context.verify(data.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
+    if not user.email_verified_at:
+        raise HTTPException(status_code=403, detail="Please verify your email before signing in")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="This account is disabled")
+    business = db.query(Business).filter(Business.user_id == user.id).first()
+    return {"access_token": issue_access_token(user), "token_type": "bearer", "user": {"id": user.id, "email": user.email, "full_name": user.full_name}, "business_id": business.id if business else None}
+
+
+@app.get("/api/v1/auth/me")
+def me(user: User = Depends(current_user), db: Session = Depends(db_session)):
+    business = db.query(Business).filter(Business.user_id == user.id).first()
+    return {"id": user.id, "email": user.email, "full_name": user.full_name, "business_name": business.business_name if business else None, "email_verified": bool(user.email_verified_at)}
+
+
+@app.post("/api/v1/auth/forgot-password")
+def forgot_password(data: EmailIn, db: Session = Depends(db_session)):
+    user = db.query(User).filter(func.lower(User.email) == str(data.email).lower()).first()
+    if user and user.email_verified_at:
+        raw = secrets.token_urlsafe(36)
+        user.reset_hash = token_hash(raw)
+        user.reset_expires_at = utcnow() + timedelta(minutes=20)
+        db.commit()
+        reset_url = os.getenv("PASSWORD_RESET_URL", "").rstrip("/")
+        if reset_url:
+            send_email(user.email, "Reset your BoloKhaata password", f"Use this single-use reset link within 20 minutes: {reset_url}?token={raw}")
+    return {"message": "If the account exists, password reset instructions will be sent."}
+
+
+@app.post("/api/v1/auth/reset-password")
+def reset_password(data: ResetIn, db: Session = Depends(db_session)):
+    user = db.query(User).filter(User.reset_hash == token_hash(data.token)).first()
+    if not user or not user.reset_expires_at or user.reset_expires_at < utcnow():
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    user.password_hash = pwd_context.hash(data.new_password)
+    user.reset_hash = None
+    user.reset_expires_at = None
+    db.commit()
+    return {"message": "Password updated. Please sign in again."}
+
+
+@app.get("/api/v1/dashboard/summary")
+def dashboard_summary(user: User = Depends(current_user), db: Session = Depends(db_session)):
+    business = require_business(user, db)
+    now = utcnow()
+    start_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    start_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    def total(kind_filter, since=None):
+        query = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(Transaction.business_id == business.id, Transaction.kind.in_(kind_filter))
+        if since:
+            query = query.filter(Transaction.created_at >= since)
+        return float(query.scalar() or 0)
+    recent = db.query(Transaction).filter(Transaction.business_id == business.id).order_by(Transaction.created_at.desc()).limit(10).all()
+    return {"today_sales": total(["SALE"], start_day), "month_sales": total(["SALE"], start_month), "total_sales": total(["SALE"]), "total_expenses": total(["EXPENSE"]), "total_outstanding_udhar": float(db.query(func.coalesce(func.sum(Customer.balance), 0)).filter(Customer.business_id == business.id, Customer.balance > 0).scalar() or 0), "total_customers": db.query(Customer).filter(Customer.business_id == business.id).count(), "total_transactions_count": db.query(Transaction).filter(Transaction.business_id == business.id).count(), "recent_transactions": [{"id": t.id, "type": t.kind, "amount": float(t.amount), "notes": t.notes, "date": t.created_at.isoformat()} for t in recent]}
+
+
+@app.post("/api/v1/voice/parse")
+def voice_parse(data: VoiceIn, user: User = Depends(current_user)):
+    return parse_voice(data.transcript)
+
+
+@app.post("/api/v1/voice/confirm")
+def voice_confirm(data: TransactionIn, user: User = Depends(current_user), db: Session = Depends(db_session)):
+    business = require_business(user, db)
+    customer = None
+    if data.customer_name:
+        customer = db.query(Customer).filter(Customer.business_id == business.id, func.lower(Customer.name) == data.customer_name.lower()).first()
+        if not customer:
+            customer = Customer(business_id=business.id, name=data.customer_name)
+            db.add(customer)
+            db.flush()
+    txn = Transaction(business_id=business.id, customer_id=customer.id if customer else None, kind=data.kind, amount=data.amount, notes=data.notes)
+    db.add(txn)
+    if customer:
+        if data.kind == "CREDIT_GIVEN":
+            customer.balance = Decimal(customer.balance or 0) + data.amount
+        elif data.kind == "PAYMENT_RECEIVED":
+            customer.balance = max(Decimal("0"), Decimal(customer.balance or 0) - data.amount)
+    db.commit()
+    return {"message": "Transaction recorded", "transaction_id": txn.id}
+
+
+@app.post("/api/v1/transactions")
+def create_transaction(data: TransactionIn, user: User = Depends(current_user), db: Session = Depends(db_session)):
+    business = require_business(user, db)
+    customer = None
+    if data.customer_name:
+        customer = db.query(Customer).filter(Customer.business_id == business.id, func.lower(Customer.name) == data.customer_name.lower()).first()
+        if not customer:
+            customer = Customer(business_id=business.id, name=data.customer_name)
+            db.add(customer)
+            db.flush()
+    txn = Transaction(business_id=business.id, customer_id=customer.id if customer else None, kind=data.kind, amount=data.amount, notes=data.notes)
+    db.add(txn)
+    if customer and data.kind == "CREDIT_GIVEN":
+        customer.balance = Decimal(customer.balance or 0) + data.amount
+    elif customer and data.kind == "PAYMENT_RECEIVED":
+        customer.balance = max(Decimal("0"), Decimal(customer.balance or 0) - data.amount)
+    db.commit()
+    return {"id": txn.id, "kind": txn.kind, "amount": str(txn.amount), "created_at": txn.created_at.isoformat()}
+
+
+@app.post("/api/v1/invoices")
+def create_invoice(data: InvoiceIn, user: User = Depends(current_user), db: Session = Depends(db_session)):
+    business = require_business(user, db)
+    number = f"BK-{business.id}-{secrets.token_hex(4).upper()}"
+    invoice = Invoice(business_id=business.id, invoice_number=number, customer_name=data.customer_name, total=data.total)
+    db.add(invoice)
+    db.commit()
+    return {"id": invoice.id, "invoice_number": number, "customer_name": invoice.customer_name, "total": str(invoice.total), "created_at": invoice.created_at.isoformat()}
+
+
+@app.get("/api/v1/invoices")
+def list_invoices(user: User = Depends(current_user), db: Session = Depends(db_session)):
+    business = require_business(user, db)
+    rows = db.query(Invoice).filter(Invoice.business_id == business.id).order_by(Invoice.created_at.desc()).limit(100).all()
+    return {"items": [{"id": x.id, "invoice_number": x.invoice_number, "customer_name": x.customer_name, "total": str(x.total), "created_at": x.created_at.isoformat()} for x in rows]}
+
+
+@app.get("/api/v1/government-schemes")
+def schemes():
+    # No unverified/fabricated scheme records are returned. Connect the official-source sync catalogue before enabling discovery.
+    return {"items": [], "schemes": [], "categories": []}
+
+
+@app.get("/api/v1/government-schemes/categories")
+def scheme_categories():
+    return []
+
+
+@app.get("/api/v1/government-schemes/sources")
+def scheme_sources():
+    return []
+
+
+@app.get("/")
+def root():
+    return {"service": "BoloKhaata API", "version": app.version, "docs": "/docs" if APP_ENV != "production" else None}

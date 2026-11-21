@@ -27,7 +27,8 @@ def test_email_registration_verification_login_and_ledger(monkeypatch):
             "business_name": "Test Cart",
             "business_category": "street_vendor",
             "state": "Delhi",
-            "preferred_language": "hi"
+            "preferred_language": "hi",
+            "accepted_terms": True
         })
         assert response.status_code == 202, response.text
         otp = re.search(r"\b(\d{6})\b", sent[-1][2]).group(1)

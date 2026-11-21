@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import hmac
 import os
 from pathlib import Path
 import re
@@ -166,10 +165,6 @@ class LoginIn(BaseModel):
 
 class EmailIn(BaseModel):
     email: EmailStr
-
-
-class VerifyIn(EmailIn):
-    otp: str = Field(pattern=r"^\d{6}$")
 
 
 class ResetIn(BaseModel):

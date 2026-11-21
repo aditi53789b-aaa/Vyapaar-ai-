@@ -53,7 +53,7 @@ cd backend
 APP_ENV=test DATABASE_URL=sqlite:///./test.sqlite3 SECRET_KEY=ci-test-secret-key-not-for-production-0000000000 pytest -q
 ```
 
-GitHub Actions runs Python compilation and the backend integration tests on pushes and pull requests.
+A GitHub Actions workflow is configured to compile the backend and run integration tests on pull requests and production-branch pushes. Confirm that repository Actions are enabled and the latest run is green before release.
 
 ## Feature boundaries that must be understood before launch
 

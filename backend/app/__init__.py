@@ -1,0 +1,1 @@
+"""BoloKhaata application package."""

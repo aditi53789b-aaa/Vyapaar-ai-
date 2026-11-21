@@ -15,6 +15,7 @@ from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, status, Query
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -40,6 +41,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 OTP_MINUTES = int(os.getenv("EMAIL_OTP_EXPIRE_MINUTES", "10"))
 CORS_ORIGINS = [x.strip() for x in os.getenv("CORS_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000").split(",") if x.strip()]
+ALLOWED_HOSTS = [x.strip() for x in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",") if x.strip()]
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
 
@@ -270,14 +272,29 @@ def parse_voice(text: str) -> dict:
     return {"raw_transcript": normalized, "amount": str(amount), "transaction_type": kind, "customer_name": customer, "status": "DRAFT_REQUIRES_CONFIRMATION"}
 
 
-app = FastAPI(title="BoloKhaata API", version="1.0.0", docs_url="/docs" if APP_ENV != "production" else None, redoc_url=None)
+app = FastAPI(title="BoloKhaata API", version="1.0.0", docs_url="/docs" if APP_ENV != "production" else None, redoc_url=None, openapi_url="/openapi.json" if APP_ENV != "production" else None)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_credentials=True, allow_methods=["GET", "POST", "PATCH", "DELETE"], allow_headers=["Authorization", "Content-Type"])
+
+@app.middleware("http")
+async def security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "microphone=(self), camera=(), geolocation=()"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    if APP_ENV == "production":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 
 @app.on_event("startup")
 def startup():
     if APP_ENV == "production":
         required = ["SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD", "PASSWORD_RESET_URL"]
+        if not ALLOWED_HOSTS or "localhost" in ALLOWED_HOSTS:
+            raise RuntimeError("Set ALLOWED_HOSTS to your deployed domain(s) in production.")
         missing = [key for key in required if not os.getenv(key)]
         if missing:
             raise RuntimeError("Missing production configuration: " + ", ".join(missing))

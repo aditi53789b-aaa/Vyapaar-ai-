@@ -149,6 +149,7 @@ class RegisterIn(BaseModel):
     district: Optional[str] = None
     business_category: Optional[str] = None
     preferred_language: str = "hi"
+    accepted_terms: bool = False
 
 
 class LoginIn(BaseModel):

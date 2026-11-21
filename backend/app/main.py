@@ -181,6 +181,10 @@ class VoiceIn(BaseModel):
     transcript: str = Field(min_length=2, max_length=1000)
 
 
+class DeleteAccountIn(BaseModel):
+    password: str
+
+
 class InvoiceIn(BaseModel):
     customer_name: str = Field(min_length=1, max_length=120)
     item_description: str = Field(default="", max_length=500)
@@ -422,6 +426,31 @@ def me(user: User = Depends(current_user), db: Session = Depends(db_session)):
     return {"id": user.id, "email": user.email, "full_name": user.full_name, "business_name": business.business_name if business else None, "email_verified": bool(user.email_verified_at)}
 
 
+
+@app.get("/api/v1/auth/me/export")
+def export_account_data(user: User = Depends(current_user), db: Session = Depends(db_session)):
+    business = require_business(user, db)
+    customers = db.query(Customer).filter(Customer.business_id == business.id).all()
+    transactions = db.query(Transaction).filter(Transaction.business_id == business.id).order_by(Transaction.created_at.asc()).all()
+    invoices = db.query(Invoice).filter(Invoice.business_id == business.id).order_by(Invoice.created_at.asc()).all()
+    return {
+        "exported_at": utcnow().isoformat(),
+        "account": {"email": user.email, "full_name": user.full_name, "created_at": user.created_at.isoformat(), "email_verified_at": user.email_verified_at.isoformat() if user.email_verified_at else None},
+        "business": {"business_name": business.business_name, "merchant_type": business.merchant_type, "business_category": business.business_category, "annual_income": business.annual_income, "state": business.state, "district": business.district, "preferred_language": business.preferred_language},
+        "customers": [{"id": x.id, "name": x.name, "phone": x.phone, "balance": str(x.balance)} for x in customers],
+        "transactions": [{"id": x.id, "kind": x.kind, "amount": str(x.amount), "notes": x.notes, "created_at": x.created_at.isoformat()} for x in transactions],
+        "invoices": [{"id": x.id, "invoice_number": x.invoice_number, "customer_name": x.customer_name, "item_description": x.item_description, "total": str(x.total), "payment_status": x.payment_status, "created_at": x.created_at.isoformat()} for x in invoices]
+    }
+
+
+@app.delete("/api/v1/auth/me", status_code=204)
+def delete_account(data: DeleteAccountIn, user: User = Depends(current_user), db: Session = Depends(db_session)):
+    if not pwd_context.verify(data.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Password confirmation failed")
+    db.delete(user)
+    db.commit()
+    return None
+
 @app.post("/api/v1/auth/forgot-password")
 def forgot_password(data: EmailIn, db: Session = Depends(db_session)):
     user = db.query(User).filter(func.lower(User.email) == str(data.email).lower()).first()
@@ -538,6 +567,39 @@ def list_invoices(user: User = Depends(current_user), db: Session = Depends(db_s
     rows = db.query(Invoice).filter(Invoice.business_id == business.id).order_by(Invoice.created_at.desc()).limit(100).all()
     return {"items": [{"id": x.id, "invoice_number": x.invoice_number, "customer_name": x.customer_name, "total": str(x.total), "item_description": x.item_description, "payment_status": x.payment_status, "created_at": x.created_at.isoformat()} for x in rows]}
 
+
+
+@app.get("/api/v1/customers")
+def list_customers(user: User = Depends(current_user), db: Session = Depends(db_session)):
+    business = require_business(user, db)
+    rows = db.query(Customer).filter(Customer.business_id == business.id).order_by(Customer.name.asc()).limit(500).all()
+    return {"items": [{"id": x.id, "name": x.name, "phone": x.phone, "balance": str(x.balance or 0)} for x in rows]}
+
+
+@app.get("/api/v1/customers/{customer_id}/transactions")
+def customer_transactions(customer_id: int, user: User = Depends(current_user), db: Session = Depends(db_session)):
+    business = require_business(user, db)
+    customer = db.query(Customer).filter(Customer.id == customer_id, Customer.business_id == business.id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    rows = db.query(Transaction).filter(Transaction.business_id == business.id, Transaction.customer_id == customer.id).order_by(Transaction.created_at.desc()).limit(200).all()
+    return {"customer": {"id": customer.id, "name": customer.name, "balance": str(customer.balance or 0)}, "items": [{"id": x.id, "kind": x.kind, "amount": str(x.amount), "notes": x.notes, "created_at": x.created_at.isoformat()} for x in rows]}
+
+
+@app.get("/api/v1/transactions")
+def list_transactions(user: User = Depends(current_user), db: Session = Depends(db_session), limit: int = 100):
+    business = require_business(user, db)
+    rows = db.query(Transaction).filter(Transaction.business_id == business.id).order_by(Transaction.created_at.desc()).limit(min(max(limit, 1), 500)).all()
+    return {"items": [{"id": x.id, "kind": x.kind, "amount": str(x.amount), "customer_id": x.customer_id, "notes": x.notes, "created_at": x.created_at.isoformat()} for x in rows]}
+
+
+@app.get("/api/v1/invoices/{invoice_id}")
+def get_invoice(invoice_id: int, user: User = Depends(current_user), db: Session = Depends(db_session)):
+    business = require_business(user, db)
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id, Invoice.business_id == business.id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    return {"id": invoice.id, "invoice_number": invoice.invoice_number, "customer_name": invoice.customer_name, "item_description": invoice.item_description, "total": str(invoice.total), "payment_status": invoice.payment_status, "created_at": invoice.created_at.isoformat()}
 
 @app.get("/api/v1/government-schemes")
 def schemes(query: Optional[str] = None, category: Optional[str] = None, state: Optional[str] = None, limit: int = 100, db: Session = Depends(db_session)):

@@ -54,7 +54,7 @@ if(micButton){
     if(finalTranscript.trim())setVoiceStatus("Heard: "+(finalTranscript+interim).trim());
    };
    recognition.onerror=event=>{
-    const messages={not-allowed:"Microphone permission was denied. Allow microphone access in your browser, or type the entry below.", "audio-capture":"No microphone was found. Connect a microphone or type the entry below.", "no-speech":"No speech was detected. Please try again and speak a little louder.", network:"Speech recognition network error. Please try again or type the entry below."};
+    const messages={"not-allowed":"Microphone permission was denied. Allow microphone access in your browser, or type the entry below.", "audio-capture":"No microphone was found. Connect a microphone or type the entry below.", "no-speech":"No speech was detected. Please try again and speak a little louder.", network:"Speech recognition network error. Please try again or type the entry below."};
     setVoiceStatus(messages[event.error]||("Speech recognition stopped: "+event.error+". You can type the entry below."));
    };
    recognition.onend=()=>{

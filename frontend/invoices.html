@@ -1,100 +1,88 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BoloKhata - Invoices</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Invoices · BoloKhaata</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="dashboard.css">
 </head>
 <body class="invoice-page">
-  <div class="shell">
-    <aside class="sidebar">
-      <div class="brandbox">
-        <a href="index.html" class="logo" data-i18n="brandName">BoloKhata</a>
-        <span class="tag" data-i18n="brandTag">Bas Bolo, Hisab Ho Gaya</span>
-      </div>
-
-      <nav class="sidenav">
-        <a href="dashboard.html" class="navitem" data-i18n="navDash">Dashboard</a>
-        <a href="invoices.html" class="navitem active" data-i18n="navInvoices">Invoices</a><a href="customers.html" class="navitem">Customer khata</a><a href="account.html" class="navitem">Account settings</a>
-        <a href="schemes.html" class="navitem" data-i18n="navSchemes">Schemes</a>
-        <a href="index.html" class="navitem" data-i18n="navHome">Landing Page</a>
+  <div class="app-shell">
+    <aside class="app-side">
+      <a class="app-logo" href="index.html">◈ BoloKhaata</a>
+      <p class="side-caption">YOUR BUSINESS, IN ONE PLACE</p>
+      <nav>
+        <a href="dashboard.html">▦ &nbsp; Overview</a>
+        <a class="selected" href="invoices.html">▤ &nbsp; Invoices</a>
+        <a href="customers.html">♙ &nbsp; Customer khata</a>
+        <a href="schemes.html">✳ &nbsp; Government schemes</a>
+        <a href="account.html">⚙ &nbsp; Account settings</a>
       </nav>
-
-      <div class="sidebottom">
-        <div class="profile">
-          <div class="avatar">AS</div>
-          <div>
-            <strong data-i18n="userName">Your account</strong>
-            <span class="role" data-i18n="userRole">Merchant</span>
-          </div>
-        </div>
-        <button id="langBtn" class="langbtn full" type="button">हिंदी</button>
+      <div class="side-user">
+        <span class="avatar" id="invoiceAvatar">BK</span>
+        <span><b id="invoiceUser">Your account</b><small id="invoiceBusiness">Business profile</small></span>
+        <button id="invoiceLogout" type="button" title="Sign out" aria-label="Sign out">↗</button>
       </div>
     </aside>
-
-    <main class="workspace">
-      <header class="pagehead">
+    <main class="app-main">
+      <header class="dash-head">
         <div>
-          <h1 data-i18n="invTitle">Customer Invoices</h1>
-          <p data-i18n="invSub">Create new bills and track paid or pending customer payments.</p>
+          <p class="side-caption">BILLING & PAYMENTS</p>
+          <h1>Customer invoices</h1>
+          <p class="muted">Create bills and track paid or pending customer payments.</p>
         </div>
+        <a class="btn" href="dashboard.html">← Back to overview</a>
       </header>
-
-      <section class="grid2">
-        <div class="card">
-          <div class="cardhead">
-            <h2 data-i18n="createInvTitle">Create New Invoice</h2>
-          </div>
-          <form id="invForm" class="form">
-            <label data-i18n="colCustomer">Customer Name</label>
-            <input type="text" id="invCust" data-i18n-placeholder="phCust" placeholder="Customer Name" required>
-
-            <label data-i18n="colItem">Items Description</label>
-            <input type="text" id="invItem" data-i18n-placeholder="phItem" placeholder="e.g., 10 kg Rice, 2 L Oil" required>
-
-            <div class="split">
-              <div>
-                <label data-i18n="colAmount">Total Amount (INR)</label>
-                <input type="number" id="invAmt" data-i18n-placeholder="phAmt" placeholder="Amount (INR)" min="1" required>
-              </div>
-              <div>
-                <label data-i18n="colStatus">Payment Status</label>
-                <select id="invStatus">
-                  <option value="paid" data-i18n="statusPaid">Paid</option>
-                  <option value="udhar" data-i18n="statusUdhar">Pending Udhar</option>
-                </select>
-              </div>
+      <section class="invoice-grid">
+        <article class="panel invoice-create">
+          <div class="panel-head"><div><h3>Create a new invoice</h3><p>Record a sale or add an amount to customer udhar</p></div></div>
+          <form id="invForm" class="invoice-form">
+            <label for="invCust">Customer name</label>
+            <input type="text" id="invCust" placeholder="e.g. Ramesh Kumar" maxlength="120" required>
+            <label for="invItem">Items / description</label>
+            <textarea id="invItem" rows="3" placeholder="e.g. 5 kg rice, 2 L oil" maxlength="500" required></textarea>
+            <div class="invoice-fields">
+              <div><label for="invAmt">Total amount (₹)</label><input type="number" id="invAmt" placeholder="0.00" min="0.01" step="0.01" required></div>
+              <div><label for="invStatus">Payment status</label><select id="invStatus"><option value="paid">Paid</option><option value="udhar">Pending · Udhar</option></select></div>
             </div>
-
-            <button type="submit" class="btn" data-i18n="btnGenInv">Generate Invoice</button>
+            <button type="submit" class="btn invoice-submit">Generate invoice</button>
+            <p class="invoice-note">Your invoice is saved to your business account and appears in recent invoices below.</p>
           </form>
-        </div>
-
-        <div class="card">
-          <div class="cardhead">
-            <h2 data-i18n="invHistoryTitle">Recent Invoices</h2>
-          </div>
+        </article>
+        <article class="panel invoice-history">
+          <div class="panel-head"><div><h3>Recent invoices</h3><p>Latest bills recorded for this business</p></div><span class="invoice-live">LIVE RECORDS</span></div>
           <div class="tablewrap">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th data-i18n="colInvId">Invoice ID</th>
-                  <th data-i18n="colCustomer">Customer</th>
-                  <th data-i18n="colItem">Items</th>
-                  <th data-i18n="colAmount">Amount</th>
-                  <th data-i18n="colStatus">Status</th>
-                </tr>
-              </thead>
-              <tbody id="invBody"><tr><td colspan="5">Loading invoices…</td></tr></tbody>
+            <table class="table invoice-table">
+              <thead><tr><th>Invoice ID</th><th>Customer</th><th>Items</th><th>Amount</th><th>Status</th></tr></thead>
+              <tbody id="invBody"><tr><td colspan="5">Loading your invoices…</td></tr></tbody>
             </table>
           </div>
-        </div>
+          <p class="invoice-footnote">Only invoices saved to your signed-in business account are shown. Sample/demo rows are not used.</p>
+        </article>
       </section>
+      <footer class="dash-foot">BoloKhaata · Your records, your control.</footer>
     </main>
   </div>
-
   <script src="lang.js"></script>
   <script src="app.js"></script>
+  <script>
+    (function(){
+      const token=sessionStorage.getItem("bolokhaata_token")||localStorage.getItem("bolokhaata_token");
+      if(!token)return;
+      const api=(window.BOLOKHATA_API_URL||location.origin).replace(/\\/$/,"");
+      fetch(api+"/api/v1/auth/me",{headers:{Authorization:"Bearer "+token}})
+        .then(r=>{if(!r.ok)throw new Error("profile");return r.json()})
+        .then(user=>{
+          const name=user.full_name||"Your account";
+          document.getElementById("invoiceUser").textContent=name;
+          document.getElementById("invoiceBusiness").textContent=user.business_name||"Business profile";
+          document.getElementById("invoiceAvatar").textContent=name.split(/\\s+/).map(x=>x[0]).slice(0,2).join("").toUpperCase();
+        }).catch(()=>{});
+      document.getElementById("invoiceLogout").addEventListener("click",()=>{
+        sessionStorage.removeItem("bolokhaata_token");localStorage.removeItem("bolokhaata_token");location.href="auth.html";
+      });
+    })();
+  </script>
 </body>
 </html>

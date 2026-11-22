@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-The active FastAPI application is `backend/app/main.py`. It includes email/password registration, expiring one-time email verification codes, password reset, short-lived JWT access tokens, business-scoped customer/transaction/invoice data, dashboard summaries, voice-draft parsing and explicit transaction confirmation, official-portal scheme catalogue entries, profile-completeness assessment, personal-data export and account deletion.
+The active FastAPI application is `backend/app/main.py`. It includes email/password registration without an OTP or email-verification step, password reset, short-lived JWT access tokens, business-scoped customer/transaction/invoice data, dashboard summaries, voice-draft parsing and explicit transaction confirmation, official-portal scheme catalogue entries, profile-completeness assessment, personal-data export and account deletion.
 
 The old flat modules under `backend/` are retained for reference only. They are legacy prototype code and are not imported by the active ASGI app. In particular, do not use the legacy SHA-256 password helper or phone-based auth modules.
 
@@ -21,7 +21,7 @@ The Compose file exposes the API port. In production, place it behind a managed 
 ## Required infrastructure controls
 
 - Terminate TLS at a trusted reverse proxy and enable HSTS only after HTTPS is correctly configured.
-- Configure request-size limits and rate limits for registration, login, OTP verification/resend, password reset and voice endpoints. An example Nginx TLS and rate-limit configuration is in `deploy/nginx.conf`; replace the domain and certificate paths and validate it with `nginx -t` before enabling it. The account-level login lock and OTP cooldown in the API are defence-in-depth, not a replacement for a shared Redis/API-gateway limiter across multiple workers.
+- Configure request-size limits and rate limits for registration, login, password reset and voice endpoints. An example Nginx TLS and rate-limit configuration is in `deploy/nginx.conf`; replace the domain and certificate paths and validate it with `nginx -t` before enabling it. The account-level login lock in the API are defence-in-depth, not a replacement for a shared Redis/API-gateway limiter across multiple workers.
 - Configure trusted proxy IPs and hostnames; do not trust arbitrary forwarded headers.
 - Use a managed PostgreSQL service with encrypted storage, private networking, automated backups and tested point-in-time restore.
 - Store secrets in the deployment platform's secret manager. Never commit `.env`, database files, SMTP credentials, reset tokens or customer exports.
@@ -58,7 +58,7 @@ A GitHub Actions workflow is configured to compile the backend and run integrati
 ## Feature boundaries that must be understood before launch
 
 - Email delivery is implemented through SMTP configuration. The repository does not contain a real provider account or credentials; the operator must supply and test these.
-- Speech capture depends on browser speech-recognition support. The transcript is a draft and must be reviewed. The parser is rule-based and may misinterpret Hindi, Hinglish, names, amounts or intent; do not auto-post without user confirmation.
+- Speech capture depends on browser speech-recognition support and microphone permission over HTTPS (or localhost). A typed-transcript fallback is available when browser speech recognition is unavailable. The Hindi/English parser handles common numeric, Hindi number-word and Devanagari-digit inputs, but can still misinterpret names, amounts or intent; every entry remains a draft and requires user confirmation.
 - Invoice records currently store a single description and total, not a full itemised tax invoice with GST calculations, HSN/SAC, tax breakdown, seller legal details, payment reconciliation or PDF signing. Do not represent these invoices as GST-compliant tax invoices without further implementation and review.
 - Scheme catalogue entries link to official programme portals. The current assessment checks whether basic profile fields are present; it does not implement authoritative scheme eligibility rules, live government integrations, application submission, loan approval or guarantee of benefits. Verify programme rules on the official portal.
 - Terms and privacy pages in `frontend/terms.html` and `frontend/privacy.html` are publication drafts. The operator must replace the draft notices with reviewed policies, legal entity identity, grievance contact, actual processor list and retention schedule.

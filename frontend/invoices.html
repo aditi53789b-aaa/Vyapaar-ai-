@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#183c32">
   <title>Invoices · BoloKhaata</title>
-  <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="dashboard.css">
 </head>
 <body class="invoice-page">
@@ -12,9 +12,9 @@
     <aside class="app-side">
       <a class="app-logo" href="index.html">◈ BoloKhaata</a>
       <p class="side-caption">YOUR BUSINESS, IN ONE PLACE</p>
-      <nav>
+      <nav aria-label="Main navigation">
         <a href="dashboard.html">▦ &nbsp; Overview</a>
-        <a class="selected" href="invoices.html">▤ &nbsp; Invoices</a>
+        <a class="selected" href="invoices.html" aria-current="page">▤ &nbsp; Invoices</a>
         <a href="customers.html">♙ &nbsp; Customer khata</a>
         <a href="schemes.html">✳ &nbsp; Government schemes</a>
         <a href="account.html">⚙ &nbsp; Account settings</a>
@@ -25,48 +25,79 @@
         <button id="invoiceLogout" type="button" title="Sign out" aria-label="Sign out">↗</button>
       </div>
     </aside>
+
     <main class="app-main">
       <header class="dash-head">
         <div>
-          <p class="side-caption">BILLING & PAYMENTS</p>
+          <p class="side-caption">BILLING &amp; PAYMENTS</p>
           <h1>Customer invoices</h1>
-          <p class="muted">Create bills and track paid or pending customer payments.</p>
+          <p class="muted">Create bills and keep track of paid and pending customer payments.</p>
         </div>
         <a class="btn" href="dashboard.html">← Back to overview</a>
       </header>
-      <section class="invoice-grid">
+
+      <section class="invoice-grid" aria-label="Invoice workspace">
         <article class="panel invoice-create">
-          <div class="panel-head"><div><h3>Create a new invoice</h3><p>Record a sale or add an amount to customer udhar</p></div></div>
+          <div class="panel-head">
+            <div>
+              <h3>Create a new invoice</h3>
+              <p>Record a sale or add an amount to customer udhar.</p>
+            </div>
+          </div>
           <form id="invForm" class="invoice-form">
             <label for="invCust">Customer name</label>
-            <input type="text" id="invCust" placeholder="e.g. Ramesh Kumar" maxlength="120" required>
+            <input type="text" id="invCust" placeholder="e.g. Ramesh Kumar" maxlength="120" autocomplete="name" required>
+
             <label for="invItem">Items / description</label>
             <textarea id="invItem" rows="3" placeholder="e.g. 5 kg rice, 2 L oil" maxlength="500" required></textarea>
+
             <div class="invoice-fields">
-              <div><label for="invAmt">Total amount (₹)</label><input type="number" id="invAmt" placeholder="0.00" min="0.01" step="0.01" required></div>
-              <div><label for="invStatus">Payment status</label><select id="invStatus"><option value="paid">Paid</option><option value="udhar">Pending · Udhar</option></select></div>
+              <div>
+                <label for="invAmt">Total amount (₹)</label>
+                <input type="number" id="invAmt" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal" required>
+              </div>
+              <div>
+                <label for="invStatus">Payment status</label>
+                <select id="invStatus">
+                  <option value="paid">Paid</option>
+                  <option value="udhar">Pending · Udhar</option>
+                </select>
+              </div>
             </div>
+
             <button type="submit" class="btn invoice-submit">Generate invoice</button>
-            <p class="invoice-note">Your invoice is saved to your business account and appears in recent invoices below.</p>
+            <p class="invoice-note">Your invoice is saved to your signed-in business account and appears in recent invoices.</p>
+            <p class="invoice-feedback" id="invoiceFeedback" role="status" aria-live="polite"></p>
           </form>
         </article>
+
         <article class="panel invoice-history">
-          <div class="panel-head"><div><h3>Recent invoices</h3><p>Latest bills recorded for this business</p></div><span class="invoice-live">LIVE RECORDS</span></div>
+          <div class="panel-head">
+            <div>
+              <h3>Recent invoices</h3>
+              <p>Latest bills recorded for this business.</p>
+            </div>
+            <span class="invoice-live">LIVE RECORDS</span>
+          </div>
           <div class="tablewrap">
             <table class="table invoice-table">
-              <thead><tr><th>Invoice ID</th><th>Customer</th><th>Items</th><th>Amount</th><th>Status</th></tr></thead>
-              <tbody id="invBody"><tr><td colspan="5">Loading your invoices…</td></tr></tbody>
+              <thead>
+                <tr><th>Invoice ID</th><th>Customer</th><th>Items</th><th>Amount</th><th>Status</th></tr>
+              </thead>
+              <tbody id="invBody" aria-live="polite">
+                <tr><td colspan="5">Loading your invoices…</td></tr>
+              </tbody>
             </table>
           </div>
-          <p class="invoice-footnote">Only invoices saved to your signed-in business account are shown. Sample/demo rows are not used.</p>
+          <p class="invoice-footnote">Only invoices saved to your signed-in business account are shown. No sample or demo rows are used.</p>
         </article>
       </section>
+
       <footer class="dash-foot">BoloKhaata · Your records, your control.</footer>
     </main>
   </div>
   <script src="lang.js"></script>
   <script src="app.js"></script>
   <script src="invoice-page.js"></script>
-
 </body>
 </html>

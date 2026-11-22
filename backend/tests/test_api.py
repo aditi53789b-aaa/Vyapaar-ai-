@@ -48,6 +48,16 @@ def test_password_registration_login_and_ledger(monkeypatch):
         draft = parsed.json()
         assert draft["transaction_type"] == "CREDIT_GIVEN"
         assert draft["amount"] == "500"
+        assert draft["customer_name"] == "Ramesh"
+
+        # Hindi number words and Devanagari digits should both be understood.
+        spoken_words = client.post("/api/v1/voice/parse", headers=headers, json={"transcript": "Ramesh ko paanch sau rupaye udhar diya"})
+        assert spoken_words.status_code == 200, spoken_words.text
+        assert spoken_words.json()["amount"] == "500"
+        devanagari = client.post("/api/v1/voice/parse", headers=headers, json={"transcript": "सीता को ५०० रुपये उधार"})
+        assert devanagari.status_code == 200, devanagari.text
+        assert devanagari.json()["amount"] == "500"
+        assert devanagari.json()["transaction_type"] == "CREDIT_GIVEN"
 
         saved = client.post("/api/v1/voice/confirm", headers=headers, json={
             "kind": "CREDIT_GIVEN", "amount": "500", "customer_name": "Ramesh", "notes": "Voice test"

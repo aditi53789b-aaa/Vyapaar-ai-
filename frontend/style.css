@@ -3,9 +3,9 @@
   --surf: #FFFBF5;
   --brown: #4A2E21;
   --brownlight: #7A5442;
-  --pink: #E899A8;
-  --pinksoft: #F9DCE1;
-  --pinkdark: #C86D7F;
+  --pink: #7FAF87;
+  --pinksoft: #E8F2E8;
+  --pinkdark: #2E7D32;
   --border: #E5D3C5;
   --green: #2E7D32;
   --greensoft: #E8F5E9;
@@ -711,3 +711,20 @@ html, body {
     width: 100%;
   }
 }
+/* Green merchant-workspace refresh */
+.invoice-page .navitem:hover,
+.invoice-page .navitem.active { background: var(--greensoft); color: var(--green); }
+.invoice-page .table th { background: var(--greensoft); color: #234b2b; }
+.invoice-page .card { border-color: #d8e7d8; box-shadow: 0 8px 24px rgba(30,70,40,.05); }
+.invoice-page .btn { background: #245b35; color: #fff; }
+.invoice-page .btn:hover { background: #174629; }
+.invoice-page input:focus,
+.invoice-page select:focus { outline: 2px solid #a8cbaa; border-color: #2e7d32; }
+.invoice-page .pagehead h1 { color: #183c32; }
+.invoice-page .pagehead p { color: #718078; }
+.invoice-page .langbtn { background: var(--greensoft); color: var(--green); }
+.invoice-page .avatar { background: var(--greensoft); color: var(--green); }
+.voice-manual { display:grid; gap:8px; max-width:560px; margin-top:16px; }
+.voice-manual label { color:#dcebc9; font-size:12px; font-weight:700; }
+.voice-manual textarea { width:100%; resize:vertical; border:1px solid #547467; border-radius:8px; padding:10px 12px; font:inherit; color:#203b30; background:#fff; }
+.voice-manual .voice-button { justify-self:start; }

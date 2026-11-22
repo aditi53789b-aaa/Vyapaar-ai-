@@ -23,3 +23,136 @@
 .invoice-page .badgeudhar{display:inline-block;background:#fff3df;color:#87570a;padding:5px 8px;border-radius:20px;font-size:10px;font-weight:800}
 @media(max-width:1050px){.invoice-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.invoice-fields{grid-template-columns:1fr}.invoice-page .dash-head{gap:12px;flex-direction:column}.invoice-page .dash-head .btn{align-self:flex-start}}
+
+
+/* Invoice page: use the same forest / sage workspace design as the dashboard. */
+.invoice-page {
+  background: #f5f7f2;
+  color: var(--ink);
+}
+.invoice-page .app-side {
+  background: #fff;
+  border-right: 1px solid var(--line);
+}
+.invoice-page .app-side nav a.selected,
+.invoice-page .app-side nav a:hover {
+  background: #edf4e8;
+  color: var(--forest);
+}
+.invoice-page .app-main {
+  max-width: 1500px;
+}
+.invoice-page .invoice-grid {
+  grid-template-columns: minmax(290px, .82fr) minmax(0, 1.45fr);
+  gap: 18px;
+}
+.invoice-page .invoice-create,
+.invoice-page .invoice-history {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  box-shadow: 0 4px 18px rgba(24, 60, 50, .035);
+  padding: 22px;
+}
+.invoice-page .invoice-form {
+  gap: 10px;
+}
+.invoice-page .invoice-form label {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+.invoice-page .invoice-form input,
+.invoice-page .invoice-form textarea,
+.invoice-page .invoice-form select {
+  width: 100%;
+  border: 1px solid #dce5db;
+  border-radius: 8px;
+  background: #fbfcfa;
+  color: var(--ink);
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 13px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.invoice-page .invoice-form input:focus,
+.invoice-page .invoice-form textarea:focus,
+.invoice-page .invoice-form select:focus {
+  outline: none;
+  border-color: #8eaf91;
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, .12);
+}
+.invoice-page .invoice-submit {
+  justify-self: stretch;
+  width: 100%;
+  min-height: 43px;
+  margin-top: 7px;
+  background: var(--forest);
+  color: #fff;
+  cursor: pointer;
+}
+.invoice-page .invoice-submit:hover {
+  background: #245443;
+}
+.invoice-page .invoice-submit:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+.invoice-page .invoice-live {
+  background: #edf4e8;
+  color: #286448;
+}
+.invoice-page .invoice-table {
+  min-width: 580px;
+}
+.invoice-page .invoice-table th {
+  background: #edf4e8;
+  color: #294b35;
+  font-size: 10px;
+  letter-spacing: .35px;
+  text-transform: uppercase;
+}
+.invoice-page .invoice-table td {
+  color: #40564a;
+  font-size: 12px;
+  vertical-align: middle;
+}
+.invoice-page .invoice-table tbody tr:hover {
+  background: #f8fbf6;
+}
+.invoice-page .badgepaid {
+  background: #e8f5e9;
+  color: #21652d;
+}
+.invoice-page .badgeudhar {
+  background: #fff3df;
+  color: #87570a;
+}
+.invoice-page .invoice-note,
+.invoice-page .invoice-footnote {
+  color: #718078;
+  line-height: 1.6;
+}
+.invoice-page .side-user .avatar {
+  background: var(--leaf);
+  color: var(--forest);
+}
+@media (max-width: 1050px) {
+  .invoice-page .invoice-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .invoice-page .invoice-create,
+  .invoice-page .invoice-history {
+    padding: 16px;
+  }
+  .invoice-page .invoice-fields {
+    grid-template-columns: 1fr;
+  }
+  .invoice-page .dash-head {
+    gap: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

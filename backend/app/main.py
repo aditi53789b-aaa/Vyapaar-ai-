@@ -268,23 +268,96 @@ def require_business(user: User, db: Session) -> Business:
 
 
 def parse_voice(text: str) -> dict:
+    """Parse a short Hindi/English merchant utterance into a reviewable draft.
+
+    This is deliberately deterministic: it never writes a transaction. The user
+    must review the extracted fields and confirm them in the dashboard.
+    """
     normalized = text.strip()
-    amount_match = re.search(r"(?:₹|rs\.?|inr\s*)?\s*(\d+(?:\.\d{1,2})?)", normalized, re.I)
-    if not amount_match:
-        raise HTTPException(status_code=422, detail="Could not identify an amount. Please say the amount clearly.")
-    amount = Decimal(amount_match.group(1))
-    low = normalized.lower()
-    if any(x in low for x in ("udhar", "baaki", "credit")):
+    if not normalized:
+        raise HTTPException(status_code=422, detail="Please speak or type a transaction first.")
+
+    # Speech engines may return Devanagari digits even when the user says a number.
+    devanagari_digits = str.maketrans("०१२३४५६७८९", "0123456789")
+    searchable = normalized.translate(devanagari_digits)
+    low = searchable.casefold()
+
+    # Handle common spoken number words when the recognizer returns words rather
+    # than digits (e.g. "paanch sau rupaye", "five hundred rupees").
+    number_words = {
+        "zero": 0, "shunya": 0, "ek": 1, "एक": 1, "one": 1,
+        "do": 2, "दो": 2, "two": 2, "teen": 3, "तीन": 3, "three": 3,
+        "char": 4, "chaar": 4, "चार": 4, "four": 4,
+        "paanch": 5, "panch": 5, "पांच": 5, "पाँच": 5, "five": 5,
+        "chhe": 6, "छह": 6, "छे": 6, "six": 6,
+        "saat": 7, "सात": 7, "seven": 7, "aath": 8, "आठ": 8, "eight": 8,
+        "nau": 9, "नौ": 9, "nine": 9, "das": 10, "दस": 10, "ten": 10,
+        "gyarah": 11, "बारह": 12, "barah": 12, "terah": 13, "तेरह": 13,
+        "chaudah": 14, "चौदह": 14, "pandrah": 15, "पंद्रह": 15,
+        "solah": 16, "सोलह": 16, "satrah": 17, "सत्रह": 17,
+        "atharah": 18, "अठारह": 18, "unnis": 19, "उन्नीस": 19,
+        "bees": 20, "बीस": 20, "tees": 30, "तीस": 30, "chalis": 40, "चालीस": 40,
+        "pachas": 50, "पचास": 50, "saath": 60, "साठ": 60, "sattar": 70, "सत्तर": 70,
+        "assi": 80, "अस्सी": 80, "nabbe": 90, "नब्बे": 90,
+        "sau": 100, "सौ": 100, "hundred": 100,
+        "hazaar": 1000, "हजार": 1000, "हज़ार": 1000, "thousand": 1000,
+    }
+    amount_match = re.search(r"(?:₹|rs\.?|inr\s*)\s*(\d+(?:\.\d{1,2})?)|(\d+(?:\.\d{1,2})?)\s*(?:₹|rs\.?|inr|rup(?:aye|ay|ees)?|रुप(?:ये|ए)?|रुपए)", low, re.I)
+    amount_value = amount_match.group(1) or amount_match.group(2) if amount_match else None
+
+    if amount_value is None:
+        numeric = re.search(r"\d+(?:\.\d{1,2})?", searchable)
+        amount_value = numeric.group(0) if numeric else None
+
+    if amount_value is None:
+        tokens = re.findall(r"[a-zA-Z\u0900-\u097F]+", low)
+        total = 0
+        current = 0
+        saw_number = False
+        for token in tokens:
+            if token not in number_words:
+                continue
+            value = number_words[token]
+            saw_number = True
+            if value == 100:
+                current = max(current, 1) * 100
+            elif value == 1000:
+                total += max(current, 1) * 1000
+                current = 0
+            else:
+                current += value
+        if saw_number:
+            amount_value = str(total + current)
+
+    if amount_value is None:
+        raise HTTPException(status_code=422, detail="I heard your words, but couldn't find the amount. Try saying 'Ramesh ko 500 rupaye udhar' or type the amount below.")
+    try:
+        amount = Decimal(amount_value)
+    except InvalidOperation:
+        raise HTTPException(status_code=422, detail="I couldn't understand that amount. Please correct it before saving.")
+    if amount <= 0:
+        raise HTTPException(status_code=422, detail="Amount must be greater than zero.")
+
+    if any(x in low for x in ("udhar", "udhaar", "baaki", "बाकी", "उधार", "credit", "borrow")):
         kind = "CREDIT_GIVEN"
-    elif any(x in low for x in ("kharch", "expense", "petrol", "diesel", "rent")):
+    elif any(x in low for x in ("kharch", "kharcha", "expense", "petrol", "diesel", "rent", "खर्च", "किराया")):
         kind = "EXPENSE"
-    elif any(x in low for x in ("jama", "payment mila", "received", "paid back", "wapas")):
+    elif any(x in low for x in ("jama", "payment mila", "paise mile", "received", "paid back", "wapas", "मिला", "जमा", "वापस")):
         kind = "PAYMENT_RECEIVED"
     else:
         kind = "SALE"
-    match = re.search(r"([A-Za-z\u0900-\u097F]{2,})\s+(?:ko|ne|from|to)", normalized, re.I)
+
+    match = re.search(r"([A-Za-z\u0900-\u097F]{2,})\s+(?:ko|ne|se|from|to)", searchable, re.I)
     customer = match.group(1).strip().title() if match else None
-    return {"raw_transcript": normalized, "amount": str(amount), "transaction_type": kind, "customer_name": customer, "status": "DRAFT_REQUIRES_CONFIRMATION"}
+    if customer and customer.casefold() in {"maine", "main", "humne", "mujhe", "i", "we"}:
+        customer = None
+    return {
+        "raw_transcript": normalized,
+        "amount": str(amount),
+        "transaction_type": kind,
+        "customer_name": customer,
+        "status": "DRAFT_REQUIRES_CONFIRMATION",
+    }
 
 
 app = FastAPI(title="BoloKhaata API", version="1.0.0", docs_url="/docs" if APP_ENV != "production" else None, redoc_url=None, openapi_url="/openapi.json" if APP_ENV != "production" else None)

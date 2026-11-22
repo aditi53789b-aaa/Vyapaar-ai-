@@ -66,23 +66,7 @@
   </div>
   <script src="lang.js"></script>
   <script src="app.js"></script>
-  <script>
-    (function(){
-      const token=sessionStorage.getItem("bolokhaata_token")||localStorage.getItem("bolokhaata_token");
-      if(!token)return;
-      const api=(window.BOLOKHATA_API_URL||location.origin).replace(/\\/$/,"");
-      fetch(api+"/api/v1/auth/me",{headers:{Authorization:"Bearer "+token}})
-        .then(r=>{if(!r.ok)throw new Error("profile");return r.json()})
-        .then(user=>{
-          const name=user.full_name||"Your account";
-          document.getElementById("invoiceUser").textContent=name;
-          document.getElementById("invoiceBusiness").textContent=user.business_name||"Business profile";
-          document.getElementById("invoiceAvatar").textContent=name.split(/\\s+/).map(x=>x[0]).slice(0,2).join("").toUpperCase();
-        }).catch(()=>{});
-      document.getElementById("invoiceLogout").addEventListener("click",()=>{
-        sessionStorage.removeItem("bolokhaata_token");localStorage.removeItem("bolokhaata_token");location.href="auth.html";
-      });
-    })();
-  </script>
+  <script src="invoice-page.js"></script>
+
 </body>
 </html>

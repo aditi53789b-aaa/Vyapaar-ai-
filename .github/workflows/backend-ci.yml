@@ -30,6 +30,11 @@ jobs:
         run: pip install -r ../requirements.txt
       - name: Compile Python files
         run: python -m compileall -q .
+      - name: Check frontend JavaScript syntax
+        run: |
+          node --check ../frontend/dashboard.js
+          node --check ../frontend/app.js
+          node --check ../frontend/invoice-page.js
       - name: Validate database migrations
         run: alembic upgrade head
       - name: Run API integration tests
